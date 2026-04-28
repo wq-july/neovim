@@ -1,19 +1,37 @@
 return {
 
- {
-  "saghen/blink.cmp",
-  opts = {
-     keymap = {
-       preset = "none",  -- 关闭默认预设，自定义按键
-       -- j/k 键进行补全选择
-       ["j"] = { "select_next", "fallback" },
-       ["k"] = { "select_prev", "fallback" },
-       -- Tab 键确认补全
-       ["<Tab>"] = { "accept", "fallback" },
-       -- 其他快捷键
-       ["<C-e>"] = { "hide", "fallback" },      -- 隐藏补全菜单
-       ["<C-Space>"] = { "show", "fallback" },  -- 手动触发补全
-     },
+    dependencies = {
+      "nvim-tree/nvim-web-devicons",
+      "onsails/lspkind.nvim",
+      "fang2hou/blink-copilot",
+      "folke/lazydev.nvim",
+      -- "rafamadriz/friendly-snippets",
+    },
+
+    ---@module "blink.cmp"
+    ---@type blink.cmp.Config
+    opts = {
+
+      ------------------------------------------------------------------
+      -- 1. 键位：自定义 Tab 键补全
+      ------------------------------------------------------------------
+      keymap = {
+        preset = "none",  -- 关闭默认预设，自定义按键
+        -- 上下方向键选择补全项
+        ["<Down>"] = { "select_next", "fallback" },
+        ["<Up>"] = { "select_prev", "fallback" },
+
+        -- Tab 键确认/选中补全
+        ["<Tab>"] = { "accept", "fallback" },
+
+        -- 其他快捷键
+        ["<C-e>"] = { "hide", "fallback" },      -- 隐藏补全菜单
+        ["<C-Space>"] = { "show", "fallback" },  -- 手动触发补全
+      },
+
+      ------------------------------------------------------------------
+      -- 2. 外观（安全）
+      ------------------------------------------------------------------
       appearance = {
         nerd_font_variant = "normal",
       },
