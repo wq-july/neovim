@@ -1,28 +1,21 @@
 -- Keymaps are automatically loaded on the VeryLazy event
 -- Default keymaps that are always set: https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/config/keymaps.lua
--- Add any additional keymaps here
+-- Add any additional global keymaps here.
 
--- ============================================
--- CodeCompanion AI 快捷键
--- ============================================
+-- AI workflow keymaps live in lua/plugins/sidekick.lua.
 
-vim.keymap.set({ 'n', 'v' }, '<Leader>aa', '<cmd>CodeCompanionChat Toggle<cr>', {
-  noremap = true,
-  silent = true,
-  desc = 'CodeCompanion: Toggle Chat',
-})
-
-vim.keymap.set({ 'n', 'v' }, '<Leader>ab', '<cmd>CodeCompanionActions<cr>', {
-  noremap = true,
-  silent = true,
-  desc = 'CodeCompanion: Actions',
-})
-
-vim.keymap.set('v', 'ga', '<cmd>CodeCompanionChat Add<cr>', {
-  noremap = true,
-  silent = true,
-  desc = 'CodeCompanion: Add Selection',
-})
-
--- 命令行缩写
-vim.cmd('cab cc CodeCompanion')
+-- Resize Neovim splits/panels with Ctrl + arrow keys.
+-- Useful in Neovide where the Sidekick Codex panel is a normal right-side split.
+local resize_opts = { silent = true }
+vim.keymap.set({ "n", "i", "t" }, "<C-Left>", function()
+  vim.cmd("vertical resize -4")
+end, vim.tbl_extend("force", resize_opts, { desc = "Decrease window width" }))
+vim.keymap.set({ "n", "i", "t" }, "<C-Right>", function()
+  vim.cmd("vertical resize +4")
+end, vim.tbl_extend("force", resize_opts, { desc = "Increase window width" }))
+vim.keymap.set({ "n", "i", "t" }, "<C-Up>", function()
+  vim.cmd("resize -2")
+end, vim.tbl_extend("force", resize_opts, { desc = "Decrease window height" }))
+vim.keymap.set({ "n", "i", "t" }, "<C-Down>", function()
+  vim.cmd("resize +2")
+end, vim.tbl_extend("force", resize_opts, { desc = "Increase window height" }))

@@ -20,6 +20,11 @@ return {
           },
         },
         clangd = {},
+        -- sidekick.nvim 的 Next Edit Suggestions 依赖 Copilot LSP。
+        -- 使用 Mason 安装后的绝对路径，避免 Neovim PATH 未包含 mason/bin 时找不到命令。
+        copilot = {
+          cmd = { "/home/wq/.local/share/nvim/mason/bin/copilot-language-server", "--stdio" },
+        },
       },
     },
   },
