@@ -18,8 +18,18 @@ return {
       -- 图片显示
       image = {
         enabled = true,
-        doc = { inline = false, float = false, max_width = 80, max_height = 40 },
-        math = { latex = { font_size = "small" } },
+        doc = {
+          enabled = true,
+          -- Markdown 图片：支持 Kitty/Ghostty；tmux 需要 allow-passthrough。
+          -- Neovide 不是终端，不能使用 Kitty Graphics Protocol 内联显示。
+          inline = true,
+          float = true,
+          max_width = 80,
+          max_height = 40,
+        },
+        -- Markdown 公式渲染保持开启；普通图片与公式都交给 Snacks image 处理。
+        math = { enabled = true, latex = { font_size = "small" } },
+        convert = { notify = false },
       },
 
       -- 缩进高亮
@@ -98,7 +108,7 @@ return {
       -- -- Buffer/Terminal/Image/Zen/Notifications
       -- ------------------------------------------------------------------
       -- { "<A-w>", function() require("snacks").bufdelete() end, desc = "[Snacks] 删除 buffer" },
-      -- { "<leader>si", function() require("snacks").image.hover() end, desc = "[Snacks] 显示图片" },
+      { "<leader>mi", function() require("snacks").image.hover() end, desc = "[Markdown] Hover image" },
       -- { "<A-i>", function() require("snacks").terminal() end, desc = "[Snacks] 切换终端", mode = {"n",  "t"} },
       -- { "<leader>sn", function() require("snacks").picker.notifications() end, desc = "[Snacks] 通知历史" },
       -- { "<leader>n",  function() require("snacks").notifier.show_history() end, desc = "[Snacks] 通知历史" },

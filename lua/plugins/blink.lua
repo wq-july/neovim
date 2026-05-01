@@ -5,9 +5,9 @@ return {
   opts = {
      keymap = {
        preset = "none",  -- 关闭默认预设，自定义按键
-       -- j/k 键进行补全选择
-       ["j"] = { "select_next", "fallback" },
-       ["k"] = { "select_prev", "fallback" },
+       -- 使用方向键选择补全项；不占用 j/k，避免写代码时输入冲突。
+       ["<Down>"] = { "select_next", "fallback" },
+       ["<Up>"] = { "select_prev", "fallback" },
        -- Tab 键：优先确认补全；无补全时处理 sidekick.nvim 的 Next Edit Suggestion；最后 fallback。
        ["<Tab>"] = {
          "accept",
@@ -51,9 +51,9 @@ return {
   --     keymap = {
   --       preset = "none",  -- 关闭默认预设，自定义按键
   --
-  --       -- j/k 键进行补全选择
-  --       ["j"] = { "select_next", "fallback" },
-  --       ["k"] = { "select_prev", "fallback" },
+  --       -- 使用方向键选择补全项；不要占用 j/k。
+  --       ["<Down>"] = { "select_next", "fallback" },
+  --       ["<Up>"] = { "select_prev", "fallback" },
   --
   --       -- Tab 键确认补全
   --       ["<Tab>"] = { "accept", "fallback" },

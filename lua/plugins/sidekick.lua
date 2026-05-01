@@ -45,6 +45,17 @@ local function codex_proxy_env()
   }
 end
 
+local function toggle_diffview()
+  -- DiffviewOpen 本身不是 toggle；再次执行只会继续留在 diff tab。
+  -- 用当前 tab 是否已有 diffview view 来决定关闭或打开，符合 <leader>ad 的“查看/退出 diff”习惯。
+  local ok, lib = pcall(require, "diffview.lib")
+  if ok and lib.get_current_view and lib.get_current_view() then
+    vim.cmd("DiffviewClose")
+  else
+    vim.cmd("DiffviewOpen")
+  end
+end
+
 local function visual_selection_text()
   -- Sidekick 的 {selection} 依赖调用 send() 时仍处在 visual mode。
   -- <leader>as 会先打开 vim.ui.input，等用户输入后 visual mode 已经结束，
@@ -154,9 +165,9 @@ return {
       },
       {
         "<leader>ad",
-        "<cmd>DiffviewOpen<cr>",
+        toggle_diffview,
         mode = "n",
-        desc = "AI: review diff with Diffview",
+        desc = "AI: toggle diff review with Diffview",
       },
       {
         "<leader>as",

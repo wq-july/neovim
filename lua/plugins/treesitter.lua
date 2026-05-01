@@ -18,6 +18,10 @@ return {
         "python",
         "json",
         "yaml",
+        -- Markdown / README 渲染依赖
+        "markdown",
+        "markdown_inline",
+        "html",
       },
     },
     -- =========================

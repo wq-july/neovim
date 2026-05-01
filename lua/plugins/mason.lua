@@ -3,10 +3,18 @@ return{
   {
     "mason-org/mason.nvim",
     init = function()
-      local mason_bin = vim.fn.stdpath("data") .. "/mason/bin"
-      if not vim.env.PATH:find(mason_bin, 1, true) then
-        vim.env.PATH = mason_bin .. ":" .. vim.env.PATH
+      local function prepend_path(path)
+        path = vim.fn.expand(path)
+        if vim.fn.isdirectory(path) == 1 and not vim.env.PATH:find(path, 1, true) then
+          vim.env.PATH = path .. ":" .. vim.env.PATH
+        end
       end
+
+      -- Neovide/GUI Neovim may not inherit shell PATH. Keep developer tools available.
+      prepend_path(vim.fn.stdpath("data") .. "/mason/bin")
+      prepend_path("~/.npm-global/bin") -- prettier / markdownlint-cli2
+      prepend_path("~/Installation/miniconda3/bin") -- ImageMagick: magick / identify / convert
+      prepend_path("~/.local/bin")
     end,
     opts = {
       ensure_installed = {
