@@ -17,12 +17,33 @@ return {
          end,
          "fallback",
        },
-       -- 其他快捷键
-       ["<C-e>"] = { "hide", "fallback" },      -- 隐藏补全菜单
-       ["<C-Space>"] = { "show", "fallback" },  -- 手动触发补全
+      -- 其他快捷键
+      ["<C-e>"] = { "hide", "fallback" },      -- 隐藏补全菜单
      },
       appearance = {
         nerd_font_variant = "normal",
+      },
+      completion = {
+        -- 恢复 blink.cmp 的自动补全体验：输入关键字/触发字符时自动弹出菜单，
+        -- 不再依赖 <C-Space> 手动触发。
+        menu = {
+          auto_show = true,
+        },
+        trigger = {
+          prefetch_on_insert = true,
+          show_on_keyword = true,
+          show_on_trigger_character = true,
+        },
+        documentation = {
+          auto_show = true,
+          auto_show_delay_ms = 200,
+        },
+        ghost_text = {
+          enabled = false,
+        },
+      },
+      signature = {
+        enabled = false,
       },
   
   }

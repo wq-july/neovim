@@ -43,7 +43,19 @@ return {
 
       -- 输入、终端和工具
       input = { enabled = true },
-      terminal = { enabled = true },
+      terminal = {
+        enabled = true,
+        win = {
+          style = "terminal",
+          relative = "win",
+          position = "right",
+          height = 1,
+          width = 0.40,
+          wo = {
+            winhighlight = "Normal:Normal,NormalFloat:Normal,FloatBorder:WinSeparator",
+          },
+        },
+      },
       lazygit = { enabled = true, configure = false },
       notifier = { enabled = true, style = "notification" },
       quickfile = { enabled = true },
@@ -62,16 +74,17 @@ return {
       -- 单词跳转
       words = { enabled = true },
 
-      -- 弹窗风格
+      -- 窗口风格
       styles = {
         terminal = {
-          relative = "editor",
-          border = "rounded",
-          position = "float",
-          backdrop = 60,
-          height = 0.9,
-          width = 0.9,
-          zindex = 50,
+          relative = "win",
+          position = "right",
+          height = 1,
+          width = 0.40,
+          stack = true,
+          wo = {
+            winhighlight = "Normal:Normal,NormalFloat:Normal,FloatBorder:WinSeparator",
+          },
         },
       },
 
@@ -103,12 +116,95 @@ return {
       -- },
     },
 
-    keys = {
+    keys = (function()
+      local sidebar_fts = {
+        ["NvimTree"] = true,
+        ["neo-tree"] = true,
+        ["Outline"] = true,
+        ["aerial"] = true,
+        ["trouble"] = true,
+        ["Trouble"] = true,
+        ["snacks_layout_box"] = true,
+        ["snacks_picker_input"] = true,
+        ["snacks_picker_list"] = true,
+        ["snacks_picker_preview"] = true,
+        ["snacks_dashboard"] = true,
+        ["snacks_notif"] = true,
+        ["snacks_terminal"] = true,
+        ["help"] = true,
+        ["qf"] = true,
+        ["lazy"] = true,
+        ["mason"] = true,
+        ["yazi"] = true,
+      }
+
+      local function is_editor_win(win)
+        if not (win and vim.api.nvim_win_is_valid(win)) then
+          return false
+        end
+        local cfg = vim.api.nvim_win_get_config(win)
+        if cfg.relative and cfg.relative ~= "" then
+          return false
+        end
+        local buf = vim.api.nvim_win_get_buf(win)
+        local bt = vim.bo[buf].buftype
+        local ft = vim.bo[buf].filetype
+        if bt ~= "" and bt ~= "acwrite" then
+          return false
+        end
+        if sidebar_fts[ft] then
+          return false
+        end
+        return true
+      end
+
+      local function terminal_host_win()
+        local current = vim.api.nvim_get_current_win()
+        if is_editor_win(current) then
+          return current
+        end
+
+        local best_win, best_area = nil, -1
+        for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+          if is_editor_win(win) then
+            local area = vim.api.nvim_win_get_width(win) * vim.api.nvim_win_get_height(win)
+            if area > best_area then
+              best_area = area
+              best_win = win
+            end
+          end
+        end
+        return best_win or current
+      end
+
+      local function open_right_terminal(cwd)
+        local host = terminal_host_win()
+        if host and vim.api.nvim_win_is_valid(host) then
+          pcall(vim.api.nvim_set_current_win, host)
+        end
+        require("snacks").terminal(nil, {
+          cwd = cwd,
+          count = 99,
+          win = {
+            relative = "win",
+            position = "right",
+            width = 0.40,
+            height = 1,
+            wo = {
+              winhighlight = "Normal:Normal,NormalFloat:Normal,FloatBorder:WinSeparator",
+            },
+          },
+        })
+      end
+
+      return {
       -- ------------------------------------------------------------------
       -- -- Buffer/Terminal/Image/Zen/Notifications
       -- ------------------------------------------------------------------
       -- { "<A-w>", function() require("snacks").bufdelete() end, desc = "[Snacks] 删除 buffer" },
       { "<leader>mi", function() require("snacks").image.hover() end, desc = "[Markdown] Hover image" },
+      { "<leader>ft", function() require("config.terminal").toggle_right(LazyVim.root()) end, desc = "[Snacks] 右侧终端（项目根目录）" },
+      { "<leader>fT", function() require("config.terminal").toggle_right((vim.uv or vim.loop).cwd()) end, desc = "[Snacks] 右侧终端（当前目录）" },
       -- { "<A-i>", function() require("snacks").terminal() end, desc = "[Snacks] 切换终端", mode = {"n",  "t"} },
       -- { "<leader>sn", function() require("snacks").picker.notifications() end, desc = "[Snacks] 通知历史" },
       -- { "<leader>n",  function() require("snacks").notifier.show_history() end, desc = "[Snacks] 通知历史" },
@@ -145,7 +241,8 @@ return {
       -- { "gI", function() require("snacks").picker.lsp_implementations() end, desc = "[Snacks] 跳转到实现" },
       -- { "gy", function() require("snacks").picker.lsp_type_definitions() end, desc = "[Snacks] 跳转到类型定义" },
       -- { "<leader>ss", function() require("snacks").picker.lsp_symbols() end, desc = "[Snacks] LSP 符号" },
-    },
+      }
+    end)(),
 
     -- init = function()
     --   local Snacks = require("snacks")

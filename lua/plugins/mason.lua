@@ -23,6 +23,7 @@ return{
         "shfmt",
         "clangd",
         "copilot-language-server",
+        "ruff",
       },
     },
   },

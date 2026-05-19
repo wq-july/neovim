@@ -7,6 +7,8 @@
 -- Resize Neovim splits/panels with Ctrl + arrow keys.
 -- Useful in Neovide where the Sidekick Codex panel is a normal right-side split.
 local resize_opts = { silent = true }
+local Terminal = require("config.terminal")
+
 vim.keymap.set({ "n", "i", "t" }, "<C-Left>", function()
   vim.cmd("vertical resize -4")
 end, vim.tbl_extend("force", resize_opts, { desc = "Decrease window width" }))
@@ -19,3 +21,46 @@ end, vim.tbl_extend("force", resize_opts, { desc = "Decrease window height" }))
 vim.keymap.set({ "n", "i", "t" }, "<C-Down>", function()
   vim.cmd("resize +2")
 end, vim.tbl_extend("force", resize_opts, { desc = "Increase window height" }))
+
+vim.keymap.set({ "n", "t" }, "<C-/>", function()
+  Terminal.toggle_right(LazyVim.root())
+end, { silent = true, desc = "Right Terminal (Root Dir)" })
+vim.keymap.set({ "n", "t" }, "<C-_>", function()
+  Terminal.toggle_right(LazyVim.root())
+end, { silent = true, desc = "Right Terminal (Root Dir)" })
+vim.keymap.set("n", "<leader>ft", function()
+  Terminal.toggle_right(LazyVim.root())
+end, { silent = true, desc = "Right Terminal (Root Dir)" })
+vim.keymap.set("n", "<leader>fT", function()
+  Terminal.toggle_right((vim.uv or vim.loop).cwd())
+end, { silent = true, desc = "Right Terminal (cwd)" })
+
+vim.keymap.set("n", "<leader>tr", function()
+  Terminal.open_right(LazyVim.root())
+end, { silent = true, desc = "Move terminal to right" })
+vim.keymap.set("n", "<leader>td", function()
+  Terminal.open_bottom(LazyVim.root())
+end, { silent = true, desc = "Move terminal to bottom" })
+vim.keymap.set("n", "<leader>tt", function()
+  Terminal.toggle_layout(LazyVim.root())
+end, { silent = true, desc = "Toggle terminal right/bottom" })
+
+-- tmux 里 Ctrl+方向键通常不稳定，补一组可靠的备用键来调终端 panel 尺寸。
+-- 注意：不要在 Insert/Terminal 模式绑定 <leader> 开头的按键。
+-- <leader> 是空格；一旦 Insert/Terminal 存在 <Space> 前缀映射，普通空格输入会等待 timeoutlen，造成明显延迟。
+vim.keymap.set("n", "<leader>t-", function()
+  Terminal.resize(-4)
+end, { silent = true, desc = "Shrink terminal panel" })
+vim.keymap.set("n", "<leader>t=", function()
+  Terminal.resize(4)
+end, { silent = true, desc = "Grow terminal panel" })
+
+vim.api.nvim_create_user_command("TermRight", function()
+  Terminal.open_right(LazyVim.root())
+end, { desc = "Move terminal to right" })
+vim.api.nvim_create_user_command("TermBottom", function()
+  Terminal.open_bottom(LazyVim.root())
+end, { desc = "Move terminal to bottom" })
+vim.api.nvim_create_user_command("TermToggleLayout", function()
+  Terminal.toggle_layout(LazyVim.root())
+end, { desc = "Toggle terminal right/bottom" })
