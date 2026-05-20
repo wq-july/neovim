@@ -28,6 +28,9 @@ return {
         -- 不再依赖 <C-Space> 手动触发。
         menu = {
           auto_show = true,
+          border = "rounded",
+          winblend = 22,
+          winhighlight = "Normal:BlinkCmpMenu,FloatBorder:BlinkCmpMenuBorder,CursorLine:BlinkCmpMenuSelection,Search:None",
         },
         trigger = {
           prefetch_on_insert = true,
@@ -37,6 +40,11 @@ return {
         documentation = {
           auto_show = true,
           auto_show_delay_ms = 200,
+          window = {
+            border = "rounded",
+            winblend = 22,
+            winhighlight = "Normal:BlinkCmpDoc,FloatBorder:BlinkCmpDocBorder",
+          },
         },
         ghost_text = {
           enabled = false,
@@ -44,6 +52,11 @@ return {
       },
       signature = {
         enabled = false,
+        window = {
+          border = "rounded",
+          winblend = 22,
+          winhighlight = "Normal:BlinkCmpSignatureHelp,FloatBorder:BlinkCmpSignatureHelpBorder",
+        },
       },
   
   }

@@ -7,6 +7,16 @@
 -- Or remove existing autocmds by their group name (which is prefixed with `lazyvim_` for the defaults)
 -- e.g. vim.api.nvim_del_augroup_by_name("lazyvim_wrap_spell")
 
+local rounded_border = "rounded"
+
+vim.lsp.handlers["textDocument/hover"] = vim.lsp.with(vim.lsp.handlers.hover, {
+  border = rounded_border,
+})
+
+vim.lsp.handlers["textDocument/signatureHelp"] = vim.lsp.with(vim.lsp.handlers.signature_help, {
+  border = rounded_border,
+})
+
 -- Python 学习脚本降噪：Pyright/Pylance 风格的 `"math" is not accessed` 属于 unused import 提示，
 -- 对当前项目式学习干扰较大。这里在 LSP 发布诊断时直接过滤掉，比 severity override 更稳。
 local default_publish_diagnostics = vim.lsp.handlers["textDocument/publishDiagnostics"]
@@ -26,6 +36,10 @@ end
 vim.diagnostic.config({
   update_in_insert = true,
   severity_sort = true,
+  float = {
+    border = rounded_border,
+    source = "if_many",
+  },
   virtual_text = {
     spacing = 2,
     source = "if_many",
