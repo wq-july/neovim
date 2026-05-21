@@ -48,10 +48,11 @@ return {
         win = {
           style = "terminal",
           relative = "win",
-          position = "right",
-          height = 1,
-          width = 0.40,
+          position = "bottom",
+          height = 0.30,
+          width = 1,
           wo = {
+            winbar = "",
             winhighlight = "Normal:Normal,NormalFloat:Normal,FloatBorder:WinSeparator",
           },
         },
@@ -78,11 +79,12 @@ return {
       styles = {
         terminal = {
           relative = "win",
-          position = "right",
-          height = 1,
-          width = 0.40,
+          position = "bottom",
+          height = 0.30,
+          width = 1,
           stack = true,
           wo = {
+            winbar = "",
             winhighlight = "Normal:Normal,NormalFloat:Normal,FloatBorder:WinSeparator",
           },
         },
@@ -177,7 +179,7 @@ return {
         return best_win or current
       end
 
-      local function open_right_terminal(cwd)
+      local function open_bottom_terminal(cwd)
         local host = terminal_host_win()
         if host and vim.api.nvim_win_is_valid(host) then
           pcall(vim.api.nvim_set_current_win, host)
@@ -187,10 +189,11 @@ return {
           count = 99,
           win = {
             relative = "win",
-            position = "right",
-            width = 0.40,
-            height = 1,
+            position = "bottom",
+            width = 1,
+            height = 0.30,
             wo = {
+              winbar = "",
               winhighlight = "Normal:Normal,NormalFloat:Normal,FloatBorder:WinSeparator",
             },
           },
@@ -203,8 +206,8 @@ return {
       -- ------------------------------------------------------------------
       -- { "<A-w>", function() require("snacks").bufdelete() end, desc = "[Snacks] 删除 buffer" },
       { "<leader>mi", function() require("snacks").image.hover() end, desc = "[Markdown] Hover image" },
-      { "<leader>ft", function() require("config.terminal").toggle_right(LazyVim.root()) end, desc = "[Snacks] 右侧终端（项目根目录）" },
-      { "<leader>fT", function() require("config.terminal").toggle_right((vim.uv or vim.loop).cwd()) end, desc = "[Snacks] 右侧终端（当前目录）" },
+      { "<leader>ft", function() require("config.terminal").toggle_bottom(LazyVim.root()) end, desc = "[Snacks] 底部终端（项目根目录）" },
+      { "<leader>fT", function() require("config.terminal").toggle_bottom((vim.uv or vim.loop).cwd()) end, desc = "[Snacks] 底部终端（当前目录）" },
       -- { "<A-i>", function() require("snacks").terminal() end, desc = "[Snacks] 切换终端", mode = {"n",  "t"} },
       -- { "<leader>sn", function() require("snacks").picker.notifications() end, desc = "[Snacks] 通知历史" },
       -- { "<leader>n",  function() require("snacks").notifier.show_history() end, desc = "[Snacks] 通知历史" },

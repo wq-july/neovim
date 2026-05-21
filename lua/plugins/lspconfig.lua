@@ -1,19 +1,53 @@
 local python_env = require("config.python_env")
 
+local pyright_root_markers = {
+  "pyrightconfig.json",
+  "pyproject.toml",
+  "setup.py",
+  "setup.cfg",
+  "requirements.txt",
+  "Pipfile",
+  ".git",
+}
+
+local function pyright_root_dir(bufnr, on_dir)
+  local root = vim.fs.root(bufnr, pyright_root_markers)
+  local file = vim.api.nvim_buf_get_name(bufnr)
+
+  -- Loose learning scripts often do not live in a project root. Falling back
+  -- to the file directory keeps Pyright attached, so diagnostics update live.
+  if not root and file ~= "" then
+    root = vim.fs.dirname(file)
+  end
+
+  on_dir(root or vim.fn.getcwd())
+end
+
 return {
   -- add pyright to lspconfig
   {
     "neovim/nvim-lspconfig",
+    event = { "BufReadPre", "BufNewFile" },
     ---@class PluginLspOpts
     opts = {
+      diagnostics = {
+        update_in_insert = false,
+        severity_sort = true,
+        float = {
+          border = "rounded",
+          source = "if_many",
+        },
+        virtual_text = {
+          spacing = 2,
+          source = "if_many",
+        },
+      },
       ---@type lspconfig.options
       servers = {
-        -- pyright will be automatically installed with mason and loaded with lspconfig
+        -- Python 只保留一个干净的 Pyright LSP；Ruff LSP/额外降噪规则先全部移除，后续再按需要逐项加回。
         pyright = {
-          flags = {
-            -- 编码时更快把未保存内容推给 LSP，配合 update_in_insert 实时显示问题。
-            debounce_text_changes = 150,
-          },
+          cmd = { vim.fn.expand("~/.local/share/nvim/mason/bin/pyright-langserver"), "--stdio" },
+          root_dir = pyright_root_dir,
           before_init = function(_, config)
             local python = python_env.resolve_python(config.root_dir, vim.api.nvim_buf_get_name(0))
             config.settings = config.settings or {}
@@ -26,15 +60,7 @@ return {
               analysis = {
                 autoSearchPaths = true,
                 useLibraryCodeForTypes = true,
-                -- 禁用 Pyright 的自动导入补全，避免接受补全时自动插入 _typeshed/Self 等奇怪 import。
-                autoImportCompletions = false,
-                -- 降低 pandas 等库的类型推断误报（如 TextFileReader.iloc）
-                diagnosticSeverityOverrides = {
-                  reportAttributeAccessIssue = "warning", -- 从 error 降为 warning，减少误报
-                  -- 学习/实验脚本里经常会先 import 再逐步使用；这些不是环境错误，关闭提示避免干扰。
-                  reportUnusedImport = "none",
-                  reportUnusedVariable = "none",
-                },
+                typeCheckingMode = "basic",
               },
             },
           },

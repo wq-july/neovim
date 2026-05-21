@@ -5,7 +5,7 @@
 -- AI workflow keymaps live in lua/plugins/sidekick.lua.
 
 -- Resize Neovim splits/panels with Ctrl + arrow keys.
--- Useful in Neovide where the Sidekick Codex panel is a normal right-side split.
+-- Useful in Neovide where AI/terminal panels are normal splits.
 local resize_opts = { silent = true }
 local Terminal = require("config.terminal")
 
@@ -23,17 +23,17 @@ vim.keymap.set({ "n", "i", "t" }, "<C-Down>", function()
 end, vim.tbl_extend("force", resize_opts, { desc = "Increase window height" }))
 
 vim.keymap.set({ "n", "t" }, "<C-/>", function()
-  Terminal.toggle_right(LazyVim.root())
-end, { silent = true, desc = "Right Terminal (Root Dir)" })
+  Terminal.toggle_bottom(LazyVim.root())
+end, { silent = true, desc = "Bottom Terminal (Root Dir)" })
 vim.keymap.set({ "n", "t" }, "<C-_>", function()
-  Terminal.toggle_right(LazyVim.root())
-end, { silent = true, desc = "Right Terminal (Root Dir)" })
+  Terminal.toggle_bottom(LazyVim.root())
+end, { silent = true, desc = "Bottom Terminal (Root Dir)" })
 vim.keymap.set("n", "<leader>ft", function()
-  Terminal.toggle_right(LazyVim.root())
-end, { silent = true, desc = "Right Terminal (Root Dir)" })
+  Terminal.toggle_bottom(LazyVim.root())
+end, { silent = true, desc = "Bottom Terminal (Root Dir)" })
 vim.keymap.set("n", "<leader>fT", function()
-  Terminal.toggle_right((vim.uv or vim.loop).cwd())
-end, { silent = true, desc = "Right Terminal (cwd)" })
+  Terminal.toggle_bottom((vim.uv or vim.loop).cwd())
+end, { silent = true, desc = "Bottom Terminal (cwd)" })
 
 vim.keymap.set("n", "<leader>tr", function()
   Terminal.open_right(LazyVim.root())
@@ -54,6 +54,19 @@ end, { silent = true, desc = "Shrink terminal panel" })
 vim.keymap.set("n", "<leader>t=", function()
   Terminal.resize(4)
 end, { silent = true, desc = "Grow terminal panel" })
+
+vim.api.nvim_create_autocmd("FileType", {
+  group = vim.api.nvim_create_augroup("user_snacks_terminal_keymaps", { clear = true }),
+  pattern = "snacks_terminal",
+  callback = function(args)
+    vim.keymap.set("t", "<C-l>", function()
+      local job = vim.b[args.buf].terminal_job_id
+      if job then
+        vim.api.nvim_chan_send(job, "\12")
+      end
+    end, { buffer = args.buf, silent = true, desc = "Clear terminal" })
+  end,
+})
 
 vim.api.nvim_create_user_command("TermRight", function()
   Terminal.open_right(LazyVim.root())

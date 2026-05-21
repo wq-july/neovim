@@ -17,24 +17,9 @@ vim.lsp.handlers["textDocument/signatureHelp"] = vim.lsp.with(vim.lsp.handlers.s
   border = rounded_border,
 })
 
--- Python 学习脚本降噪：Pyright/Pylance 风格的 `"math" is not accessed` 属于 unused import 提示，
--- 对当前项目式学习干扰较大。这里在 LSP 发布诊断时直接过滤掉，比 severity override 更稳。
-local default_publish_diagnostics = vim.lsp.handlers["textDocument/publishDiagnostics"]
-vim.lsp.handlers["textDocument/publishDiagnostics"] = function(err, result, ctx, config)
-  local client = ctx and ctx.client_id and vim.lsp.get_client_by_id(ctx.client_id) or nil
-  if client and (client.name == "pyright" or client.name == "basedpyright") and result and result.diagnostics then
-    result.diagnostics = vim.tbl_filter(function(diagnostic)
-      local message = diagnostic.message or ""
-      return not message:find("is not accessed", 1, true)
-    end, result.diagnostics)
-  end
-  return default_publish_diagnostics(err, result, ctx, config)
-end
-
--- 编码实时反馈：默认允许诊断在 Insert 模式下更新，这样不保存文件也能看到 LSP 问题。
--- Markdown/C++ 等特殊缓冲区可以在下面的局部配置里再单独降噪。
+-- 干净的全局诊断显示：不再按 Pyright/Ruff 来源改写或过滤诊断。
 vim.diagnostic.config({
-  update_in_insert = true,
+  update_in_insert = false,
   severity_sort = true,
   float = {
     border = rounded_border,
@@ -52,14 +37,6 @@ vim.api.nvim_create_autocmd("FileType", {
   pattern = { "markdown", "markdown.mdx" },
   callback = function()
     vim.opt_local.spell = false
-
-    -- 如果波浪线来自诊断 underline，也一并隐藏；诊断 sign/virtual_text/浮窗仍保留。
-    pcall(vim.diagnostic.config, {
-      underline = false,
-      signs = true,
-      virtual_text = true,
-      update_in_insert = false,
-    })
   end,
 })
 

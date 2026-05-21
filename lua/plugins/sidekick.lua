@@ -95,9 +95,142 @@ local function visual_selection_text()
   return text:match("%S") and text or nil
 end
 
+local codex_layout = "bottom"
+
+local function codex_split_opts(layout)
+  return {
+    width = layout == "right" and 0.40 or 0,
+    height = layout == "bottom" and 0.30 or 0,
+  }
+end
+
+local function set_codex_config_layout(layout)
+  codex_layout = layout
+
+  local win = require("sidekick.config").cli.win
+  win.layout = layout
+  win.split = vim.tbl_deep_extend("force", win.split or {}, codex_split_opts(layout))
+  win.wo = vim.tbl_deep_extend("force", win.wo or {}, {
+    winfixwidth = false,
+    winfixheight = false,
+  })
+end
+
+local function codex_states()
+  return require("sidekick.cli.state").get({ name = "codex", attached = true })
+end
+
+local function current_codex_layout()
+  for _, state in ipairs(codex_states()) do
+    if state.terminal and state.terminal.opts and state.terminal.opts.layout then
+      return state.terminal.opts.layout
+    end
+  end
+  return codex_layout
+end
+
+local function apply_codex_layout(layout)
+  set_codex_config_layout(layout)
+
+  for _, state in ipairs(codex_states()) do
+    local terminal = state.terminal
+    if terminal then
+      local was_open = terminal:is_open()
+      local was_focused = was_open and terminal:is_focused()
+      if was_open then
+        terminal:hide()
+      end
+
+      terminal.opts.layout = layout
+      terminal.opts.split = vim.tbl_deep_extend("force", terminal.opts.split or {}, codex_split_opts(layout))
+      terminal.opts.wo = vim.tbl_deep_extend("force", terminal.opts.wo or {}, {
+        winfixwidth = false,
+        winfixheight = false,
+      })
+
+      if was_open then
+        terminal:show()
+        if was_focused then
+          terminal:focus()
+        end
+      end
+    end
+  end
+end
+
+local function show_codex(layout, focus)
+  layout = layout or codex_layout
+  focus = focus ~= false
+  apply_codex_layout(layout)
+
+  local shown_existing = false
+  for _, state in ipairs(codex_states()) do
+    local terminal = state.terminal
+    if terminal then
+      if not terminal:is_open() then
+        terminal:show()
+      end
+      if focus then
+        terminal:focus()
+      end
+      shown_existing = true
+    end
+  end
+
+  if not shown_existing then
+    require("sidekick.cli").show({ name = "codex", focus = focus })
+  end
+end
+
+local function toggle_codex()
+  local has_open = false
+  for _, state in ipairs(codex_states()) do
+    if state.terminal and state.terminal:is_open() then
+      state.terminal:hide()
+      has_open = true
+    end
+  end
+  if not has_open then
+    show_codex(codex_layout, true)
+  end
+end
+
+local function focus_or_blur_codex()
+  for _, state in ipairs(codex_states()) do
+    local terminal = state.terminal
+    if terminal and terminal:is_open() then
+      if terminal:is_focused() then
+        terminal:blur()
+      else
+        terminal:focus()
+      end
+      return
+    end
+  end
+  show_codex(codex_layout, true)
+end
+
+local function toggle_codex_layout()
+  local layout = current_codex_layout()
+  show_codex(layout == "right" and "bottom" or "right", true)
+end
+
 return {
   {
     "folke/sidekick.nvim",
+    config = function(_, opts)
+      require("sidekick").setup(opts)
+
+      vim.api.nvim_create_user_command("CodexRight", function()
+        show_codex("right", true)
+      end, { desc = "Move Sidekick Codex CLI to the right" })
+      vim.api.nvim_create_user_command("CodexBottom", function()
+        show_codex("bottom", true)
+      end, { desc = "Move Sidekick Codex CLI to the bottom" })
+      vim.api.nvim_create_user_command("CodexToggleLayout", function()
+        toggle_codex_layout()
+      end, { desc = "Toggle Sidekick Codex CLI right/bottom" })
+    end,
     opts = {
       nes = {
         enabled = true,
@@ -117,15 +250,16 @@ return {
           backend = "tmux",
         },
         win = {
-          -- 把 Sidekick CLI 当成一个右侧 panel 使用，和普通 nvim split 一样用 Ctrl-h/j/k/l 进出。
+          -- 把 Sidekick CLI 当成一个普通 nvim split 使用，和普通窗口一样用 Ctrl-h/j/k/l 进出。
           -- sidekick.nvim 默认会给 split 设置 winfixwidth/winfixheight；这里显式关闭，方便用 Ctrl-方向键调整 panel 大小。
           wo = {
             winfixwidth = false,
             winfixheight = false,
           },
-          layout = "right",
+          layout = "bottom",
           split = {
-            width = 72,
+            width = 0.40,
+            height = 0.30,
           },
           keys = {
             nav_left = { "<c-h>", "nav_left", expr = true, desc = "navigate to the left window" },
@@ -140,7 +274,7 @@ return {
       {
         "<c-.>",
         function()
-          require("sidekick.cli").focus({ name = "codex" })
+          focus_or_blur_codex()
         end,
         mode = { "n", "t", "i", "x" },
         desc = "Sidekick: focus/blur Codex CLI",
@@ -148,20 +282,36 @@ return {
       {
         "<leader>ac",
         function()
-          -- 不关闭/销毁 Codex 进程：如果右侧窗口已打开就只隐藏窗口；如果已隐藏或未启动就显示/启动。
+          -- 不关闭/销毁 Codex 进程：如果窗口已打开就只隐藏窗口；如果已隐藏或未启动就显示/启动。
           -- 这样再次打开时可以复用仍在运行的 Codex session，避免重复启动导致卡顿。
-          local cli = require("sidekick.cli")
-          local states = require("sidekick.cli.state").get({ name = "codex", attached = true })
-          for _, state in ipairs(states) do
-            if state.terminal and state.terminal:is_open() then
-              cli.hide({ name = "codex" })
-              return
-            end
-          end
-          cli.show({ name = "codex", focus = true })
+          toggle_codex()
         end,
         mode = { "n", "x" },
         desc = "AI: show/hide Sidekick Codex CLI (keep process)",
+      },
+      {
+        "<leader>ar",
+        function()
+          show_codex("right", true)
+        end,
+        mode = { "n", "x" },
+        desc = "AI: move Sidekick Codex CLI to right",
+      },
+      {
+        "<leader>ab",
+        function()
+          show_codex("bottom", true)
+        end,
+        mode = { "n", "x" },
+        desc = "AI: move Sidekick Codex CLI to bottom",
+      },
+      {
+        "<leader>al",
+        function()
+          toggle_codex_layout()
+        end,
+        mode = { "n", "x" },
+        desc = "AI: toggle Sidekick Codex CLI right/bottom",
       },
       {
         "<leader>ad",
@@ -180,6 +330,7 @@ return {
 
           vim.ui.input({ prompt = "Sidekick instruction for selection: " }, function(input)
             if input and input:match("%S") then
+              set_codex_config_layout(codex_layout)
               local text = require("sidekick.text").to_text(input .. "\n\n" .. selection)
               require("sidekick.cli").send({
                 name = "codex",
@@ -196,6 +347,7 @@ return {
       {
         "<leader>ap",
         function()
+          set_codex_config_layout(codex_layout)
           require("sidekick.cli").prompt({ name = "codex" })
         end,
         mode = { "n", "x" },
@@ -204,6 +356,7 @@ return {
       {
         "<leader>af",
         function()
+          set_codex_config_layout(codex_layout)
           require("sidekick.cli").send({ name = "codex", msg = "{file}", focus = true })
         end,
         mode = "n",
@@ -212,6 +365,7 @@ return {
       {
         "<leader>at",
         function()
+          set_codex_config_layout(codex_layout)
           require("sidekick.cli").send({ name = "codex", msg = "{this}", focus = true })
         end,
         mode = { "n", "x" },

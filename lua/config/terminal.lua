@@ -1,7 +1,7 @@
 local M = {}
 
 local TERMINAL_COUNT = 99
-local last_position = "right"
+local last_position = "bottom"
 local last_terminal
 
 local sidebar_fts = {
@@ -76,8 +76,23 @@ local function terminal_win_opts(position)
     wo = {
       winfixwidth = vertical,
       winfixheight = not vertical,
+      winbar = "",
       winhighlight = "Normal:Normal,NormalFloat:Normal,FloatBorder:WinSeparator",
     },
+    on_buf = function(self)
+      vim.api.nvim_create_autocmd("TermClose", {
+        buffer = self.buf,
+        once = true,
+        callback = function()
+          vim.schedule(function()
+            if self:buf_valid() then
+              self:close()
+              vim.cmd.checktime()
+            end
+          end)
+        end,
+      })
+    end,
   }
 end
 
@@ -85,6 +100,7 @@ local function terminal_opts(position, cwd)
   return {
     cwd = cwd,
     count = TERMINAL_COUNT,
+    auto_close = false,
     win = terminal_win_opts(position),
   }
 end
@@ -124,6 +140,10 @@ local function managed_terminal()
       return terminal
     end
   end
+end
+
+function M.current()
+  return managed_terminal()
 end
 
 local function terminal_position(terminal)
@@ -192,6 +212,10 @@ end
 
 function M.toggle_right(cwd)
   M.toggle("right", cwd)
+end
+
+function M.toggle_bottom(cwd)
+  M.toggle("bottom", cwd)
 end
 
 function M.resize(delta)

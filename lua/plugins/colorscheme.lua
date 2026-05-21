@@ -1,4 +1,6 @@
 local transparent_enabled = true
+local neovide_glass_opacity = 0.78
+local neovide_window_opacity = 0.92
 
 local function set_bg(group, bg)
   local ok, hl = pcall(vim.api.nvim_get_hl, 0, { name = group, link = false })
@@ -9,9 +11,30 @@ local function set_bg(group, bg)
   pcall(vim.api.nvim_set_hl, 0, group, hl)
 end
 
+local function apply_neovide_glass()
+  if not vim.g.neovide then
+    return
+  end
+
+  -- normal_opacity 只控制主编辑背景透明度；真正的整窗背景模糊取决于系统合成器。
+  vim.g.neovide_opacity = neovide_window_opacity
+  vim.g.neovide_normal_opacity = neovide_glass_opacity
+  vim.g.neovide_text_gamma = 0.85
+  vim.g.neovide_text_contrast = 0.45
+
+  -- 在支持的窗口系统上请求整窗 blur；GNOME/X11 通常只会得到透明，不会得到真实模糊。
+  vim.g.neovide_window_blurred = true
+
+  -- Keep floating windows in the same glass style, just a bit clearer.
+  vim.g.neovide_floating_shadow = false
+  vim.g.neovide_floating_z_height = 4
+  vim.g.neovide_floating_blur_amount_x = 10.0
+  vim.g.neovide_floating_blur_amount_y = 10.0
+end
+
 local function apply_vscode_overrides()
   if transparent_enabled then
-    -- 透明主编辑区：配合 Neovide/终端窗口透明度，可以隐约看到背后的教材。
+    -- 主界面尽量不画实色背景；Neovide 下由 normal_opacity 做整窗玻璃底。
     for _, group in ipairs({
       "Normal",
       "NormalNC",
@@ -20,6 +43,19 @@ local function apply_vscode_overrides()
       "FoldColumn",
       "LineNr",
       "CursorLineNr",
+      "CursorLine",
+      "CursorLineFold",
+      "CursorLineSign",
+      "ColorColumn",
+      "StatusLine",
+      "StatusLineNC",
+      "WinBar",
+      "WinBarNC",
+      "TabLine",
+      "TabLineFill",
+      "TabLineSel",
+      "MsgArea",
+      "MsgSeparator",
       "BufferLineBackground",
       "BufferLineFill",
       "BufferCurrent",
@@ -27,16 +63,41 @@ local function apply_vscode_overrides()
       "BufferCurrentMod",
       "BufferCurrentSign",
       "BufferCurrentTarget",
+      "BufferVisible",
+      "BufferVisibleIndex",
+      "BufferVisibleMod",
+      "BufferVisibleSign",
+      "BufferVisibleTarget",
+      "BufferInactive",
+      "BufferInactiveIndex",
+      "BufferInactiveMod",
+      "BufferInactiveSign",
+      "BufferInactiveTarget",
       "BufferTabpageFill",
       "BufferTabpages",
+      "NvimTreeNormal",
+      "NvimTreeNormalNC",
+      "NvimTreeEndOfBuffer",
+      "NvimTreeVertSplit",
+      "NeoTreeNormal",
+      "NeoTreeNormalNC",
+      "SnacksDashboardNormal",
+      "SnacksPicker",
+      "SnacksPickerInput",
+      "SnacksPickerList",
+      "SnacksPickerPreview",
+      "LazyNormal",
+      "MasonNormal",
+      "WhichKey",
+      "WhichKeyNormal",
     }) do
       set_bg(group, "NONE")
     end
 
-    -- 主编辑区保持透明；浮窗使用半透明玻璃色，配合 Neovide 的 floating blur 提升可读性。
+    -- 主编辑区在 Neovide 下给一点暗色玻璃底；终端中仍保持完全透明。
     vim.cmd([[
-      highlight Normal guibg=NONE ctermbg=NONE guifg=#f2f7ff
-      highlight NormalNC guibg=NONE ctermbg=NONE guifg=#dce8ff
+      highlight Normal guibg=NONE ctermbg=NONE guifg=#e8e8e8
+      highlight NormalNC guibg=NONE ctermbg=NONE guifg=#d4d4d4
       highlight VertSplit guibg=NONE ctermbg=NONE guifg=#3e3e42 ctermfg=237
       highlight WinSeparator guibg=NONE ctermbg=NONE guifg=#3e3e42 ctermfg=237
       highlight Comment guifg=#8ad66d
@@ -49,28 +110,40 @@ local function apply_vscode_overrides()
       highlight Keyword guifg=#ff7ab2
       highlight Type guifg=#4ec9b0
       highlight Special guifg=#c586ff
-      highlight Pmenu guibg=#1e1e1e ctermbg=234 blend=25
-      highlight PmenuExtra guibg=#1e1e1e ctermbg=234 blend=25
-      highlight PmenuKind guibg=#1e1e1e ctermbg=234 blend=25
+      highlight StatusLine guibg=NONE ctermbg=NONE guifg=#d4d4d4
+      highlight StatusLineNC guibg=NONE ctermbg=NONE guifg=#8a8a8a
+      highlight TabLine guibg=NONE ctermbg=NONE guifg=#a0a0a0
+      highlight TabLineFill guibg=NONE ctermbg=NONE
+      highlight TabLineSel guibg=NONE ctermbg=NONE guifg=#ffffff
+      highlight Pmenu guibg=#1e1e1e ctermbg=234 blend=20
+      highlight PmenuExtra guibg=#1e1e1e ctermbg=234 blend=20
+      highlight PmenuKind guibg=#1e1e1e ctermbg=234 blend=20
       highlight PmenuSbar guibg=NONE ctermbg=NONE
-      highlight PmenuThumb guibg=#64748b ctermbg=240 blend=15
-      highlight PmenuSel guibg=#2d3a46 guifg=#ffffff ctermbg=24 blend=15
-      highlight NormalFloat guibg=#1e1e1e ctermbg=234 blend=25
-      highlight FloatBorder guibg=#1e1e1e ctermbg=234 guifg=#7dd3fc ctermfg=117 blend=25
-      highlight FloatTitle guibg=#1e1e1e ctermbg=234 guifg=#f2f7ff blend=25
-      highlight NoicePopup guibg=#1e1e1e ctermbg=234 blend=25
-      highlight NoicePopupBorder guibg=#1e1e1e ctermbg=234 guifg=#7dd3fc ctermfg=117 blend=25
-      highlight BlinkCmpMenu guibg=#1e1e1e ctermbg=234 blend=25
-      highlight BlinkCmpMenuBorder guibg=#1e1e1e ctermbg=234 guifg=#7dd3fc ctermfg=117 blend=25
-      highlight BlinkCmpMenuSelection guibg=#2d3a46 guifg=#ffffff ctermbg=24 blend=15
-      highlight BlinkCmpDoc guibg=#1e1e1e ctermbg=234 blend=25
-      highlight BlinkCmpDocBorder guibg=#1e1e1e ctermbg=234 guifg=#7dd3fc ctermfg=117 blend=25
-      highlight BlinkCmpSignatureHelp guibg=#1e1e1e ctermbg=234 blend=25
-      highlight BlinkCmpSignatureHelpBorder guibg=#1e1e1e ctermbg=234 guifg=#7dd3fc ctermfg=117 blend=25
+      highlight PmenuThumb guibg=#5f5f5f ctermbg=240 blend=15
+      highlight PmenuSel guibg=#333333 guifg=#ffffff ctermbg=236 blend=15
+      highlight NormalFloat guibg=#1e1e1e ctermbg=234 blend=20
+      highlight FloatBorder guibg=#1e1e1e ctermbg=234 guifg=#6f6f6f ctermfg=242 blend=20
+      highlight FloatTitle guibg=#1e1e1e ctermbg=234 guifg=#e8e8e8 blend=20
+      highlight NoicePopup guibg=#1e1e1e ctermbg=234 blend=20
+      highlight NoicePopupBorder guibg=#1e1e1e ctermbg=234 guifg=#6f6f6f ctermfg=242 blend=20
+      highlight BlinkCmpMenu guibg=#1e1e1e ctermbg=234 blend=20
+      highlight BlinkCmpMenuBorder guibg=#1e1e1e ctermbg=234 guifg=#6f6f6f ctermfg=242 blend=20
+      highlight BlinkCmpMenuSelection guibg=#333333 guifg=#ffffff ctermbg=236 blend=15
+      highlight BlinkCmpDoc guibg=#1e1e1e ctermbg=234 blend=20
+      highlight BlinkCmpDocBorder guibg=#1e1e1e ctermbg=234 guifg=#6f6f6f ctermfg=242 blend=20
+      highlight BlinkCmpSignatureHelp guibg=#1e1e1e ctermbg=234 blend=20
+      highlight BlinkCmpSignatureHelpBorder guibg=#1e1e1e ctermbg=234 guifg=#6f6f6f ctermfg=242 blend=20
       highlight NvimTreeNormal guibg=NONE ctermbg=NONE
       highlight NvimTreeEndOfBuffer guibg=NONE ctermbg=NONE
       highlight NvimTreeVertSplit guibg=NONE ctermbg=NONE
     ]])
+
+    if vim.g.neovide then
+      vim.cmd([[
+        highlight Normal guibg=#1e1e1e ctermbg=NONE guifg=#e8e8e8
+        highlight NormalNC guibg=#1b1b1b ctermbg=NONE guifg=#d4d4d4
+      ]])
+    end
   else
     -- 不透明主编辑区：需要纯专注、不想看到背景时使用。
     vim.cmd([[
@@ -135,17 +208,7 @@ return {
     config = function(_, opts)
       vim.o.background = "dark"
 
-      -- Neovide 下让整个 GUI 窗口轻微透明；终端版 Neovim 仍需由终端模拟器控制透明度。
-      if vim.g.neovide then
-        vim.g.neovide_opacity = 0.86
-        vim.g.neovide_normal_opacity = 0.86
-        vim.g.neovide_text_gamma = 0.85
-        vim.g.neovide_text_contrast = 0.45
-        vim.g.neovide_floating_shadow = false
-        vim.g.neovide_floating_z_height = 4
-        vim.g.neovide_floating_blur_amount_x = 6.0
-        vim.g.neovide_floating_blur_amount_y = 6.0
-      end
+      apply_neovide_glass()
 
       require("vscode").setup(opts)
       vim.cmd.colorscheme("vscode")

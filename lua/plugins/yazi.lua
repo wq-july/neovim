@@ -36,6 +36,12 @@ return {
         open_file_in_tab = "<c-t>",
         send_to_quickfix_list = "<c-q>",
       },
+      integrations = {
+        -- This config uses snacks.nvim rather than telescope.nvim.
+        grep_in_directory = "snacks.picker",
+        grep_in_selected_files = "snacks.picker",
+        picker_add_copy_relative_path_action = "snacks.picker",
+      },
     },
   },
 }
