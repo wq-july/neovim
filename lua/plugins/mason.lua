@@ -22,7 +22,6 @@ return{
         "shellcheck",
         "shfmt",
         "clangd",
-        "copilot-language-server",
       },
     },
   },
