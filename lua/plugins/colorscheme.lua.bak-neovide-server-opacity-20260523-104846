@@ -1,10 +1,6 @@
 local transparent_enabled = true
-local neovide_glass_opacity = 0.78
-local neovide_window_opacity = 0.90
-
-local function is_neovide_gui()
-  return vim.g.neovide or vim.env.NVIM_GUI == "neovide"
-end
+local neovide_glass_opacity = 0.84
+local neovide_window_opacity = 0.94
 
 local function set_bg(group, bg)
   local ok, hl = pcall(vim.api.nvim_get_hl, 0, { name = group, link = false })
@@ -16,15 +12,15 @@ local function set_bg(group, bg)
 end
 
 local function apply_neovide_glass()
-  if not is_neovide_gui() then
+  if not vim.g.neovide then
     return
   end
 
   -- normal_opacity 只控制主编辑背景透明度；真正的整窗背景模糊取决于系统合成器。
   vim.g.neovide_opacity = neovide_window_opacity
   vim.g.neovide_normal_opacity = neovide_glass_opacity
-  vim.g.neovide_text_gamma = 0.9
-  vim.g.neovide_text_contrast = 0.5
+  vim.g.neovide_text_gamma = 0.85
+  vim.g.neovide_text_contrast = 0.45
 
   -- 在支持的窗口系统上请求整窗 blur；GNOME/X11 通常只会得到透明，不会得到真实模糊。
   vim.g.neovide_window_blurred = true
@@ -34,35 +30,6 @@ local function apply_neovide_glass()
   vim.g.neovide_floating_z_height = 4
   vim.g.neovide_floating_blur_amount_x = 12.0
   vim.g.neovide_floating_blur_amount_y = 12.0
-end
-
-local function apply_diagnostic_overrides()
-  vim.cmd([[
-    highlight DiagnosticWarn guifg=#7a7a7a ctermfg=244
-    highlight DiagnosticVirtualTextWarn guifg=#666666 ctermfg=242 guibg=NONE
-    highlight DiagnosticVirtualLinesWarn guifg=#666666 ctermfg=242 guibg=NONE
-    highlight DiagnosticSignWarn guifg=#666666 ctermfg=242
-    highlight DiagnosticUnderlineWarn gui=undercurl guisp=#555555
-
-    highlight DiagnosticHint guifg=#5f5f5f ctermfg=240
-    highlight DiagnosticVirtualTextHint guifg=#555555 ctermfg=240 guibg=NONE
-    highlight DiagnosticVirtualLinesHint guifg=#555555 ctermfg=240 guibg=NONE
-    highlight DiagnosticSignHint guifg=#555555 ctermfg=240
-    highlight DiagnosticUnderlineHint gui=undercurl guisp=#444444
-
-    highlight DiagnosticInfo guifg=#6f7f8f ctermfg=244
-    highlight DiagnosticVirtualTextInfo guifg=#5f6f7f ctermfg=243 guibg=NONE
-    highlight DiagnosticVirtualLinesInfo guifg=#5f6f7f ctermfg=243 guibg=NONE
-    highlight DiagnosticSignInfo guifg=#5f6f7f ctermfg=243
-
-    highlight DiagnosticUnnecessary guifg=#555555 ctermfg=240 gui=NONE
-    highlight DiagnosticDeprecated guifg=#666666 ctermfg=242 gui=strikethrough
-
-    highlight TroubleText guifg=#8a8a8a
-    highlight TroubleSource guifg=#666666
-    highlight TroubleCode guifg=#666666
-    highlight TroublePos guifg=#666666
-  ]])
 end
 
 local function apply_vscode_overrides()
@@ -221,8 +188,6 @@ local function apply_vscode_overrides()
       highlight BufferTabpages guibg=#1e1e1e guifg=#569cd6
     ]])
   end
-
-  apply_diagnostic_overrides()
 end
 
 return {

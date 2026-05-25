@@ -1,7 +1,6 @@
 return {
   {
     "folke/noice.nvim",
-    enabled = vim.env.NVIM_GUI ~= "neovide",
     opts = {
       presets = {
         lsp_doc_border = true,

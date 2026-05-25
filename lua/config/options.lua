@@ -10,3 +10,21 @@ vim.opt.ttimeoutlen = 30
 pcall(function()
   vim.o.winborder = "rounded"
 end)
+
+local function configure_osc52_clipboard()
+  -- 在 SSH/tmux 里用 OSC52 把 yanks 写入本地终端剪贴板。
+  -- 只在远程/复用器环境启用，避免影响 Neovide 或本机桌面剪贴板 provider。
+  if not (vim.env.SSH_TTY or vim.env.SSH_CONNECTION or vim.env.TMUX) then
+    return
+  end
+
+  vim.g.clipboard = "osc52"
+  vim.opt.clipboard = "unnamedplus"
+end
+
+configure_osc52_clipboard()
+
+vim.api.nvim_create_autocmd("User", {
+  pattern = "VeryLazy",
+  callback = configure_osc52_clipboard,
+})

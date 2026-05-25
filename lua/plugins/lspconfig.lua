@@ -1,5 +1,11 @@
 local python_env = require("config.python_env")
 
+local function diagnostic_virtual_line_format(diagnostic)
+  local source = diagnostic.source and diagnostic.source ~= "" and ("[" .. diagnostic.source .. "] ") or ""
+  local code = diagnostic.code and diagnostic.code ~= "" and (tostring(diagnostic.code) .. ": ") or ""
+  return source .. code .. diagnostic.message
+end
+
 local pyright_root_markers = {
   "pyrightconfig.json",
   "pyproject.toml",
@@ -37,9 +43,10 @@ return {
           border = "rounded",
           source = "if_many",
         },
-        virtual_text = {
-          spacing = 2,
-          source = "if_many",
+        virtual_text = false,
+        virtual_lines = {
+          current_line = true,
+          format = diagnostic_virtual_line_format,
         },
       },
       ---@type lspconfig.options

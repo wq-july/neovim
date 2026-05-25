@@ -9,6 +9,12 @@
 
 local rounded_border = "rounded"
 
+local function diagnostic_virtual_line_format(diagnostic)
+  local source = diagnostic.source and diagnostic.source ~= "" and ("[" .. diagnostic.source .. "] ") or ""
+  local code = diagnostic.code and diagnostic.code ~= "" and (tostring(diagnostic.code) .. ": ") or ""
+  return source .. code .. diagnostic.message
+end
+
 vim.lsp.handlers["textDocument/hover"] = vim.lsp.with(vim.lsp.handlers.hover, {
   border = rounded_border,
 })
@@ -25,9 +31,10 @@ vim.diagnostic.config({
     border = rounded_border,
     source = "if_many",
   },
-  virtual_text = {
-    spacing = 2,
-    source = "if_many",
+  virtual_text = false,
+  virtual_lines = {
+    current_line = true,
+    format = diagnostic_virtual_line_format,
   },
 })
 
@@ -81,9 +88,10 @@ vim.api.nvim_create_autocmd("LspAttach", {
       underline = false,
       update_in_insert = false,
       severity_sort = true,
-      virtual_text = {
-        spacing = 2,
-        source = "if_many",
+      virtual_text = false,
+      virtual_lines = {
+        current_line = true,
+        format = diagnostic_virtual_line_format,
       },
     }, args.buf)
   end,

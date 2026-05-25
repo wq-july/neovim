@@ -26,7 +26,65 @@ local function codex_cmd()
   return "codex"
 end
 
+local proxy_env_keys = {
+  "HTTP_PROXY",
+  "HTTPS_PROXY",
+  "ALL_PROXY",
+  "http_proxy",
+  "https_proxy",
+  "all_proxy",
+}
+
+local function read_file(path)
+  path = vim.fn.expand(path)
+  if vim.fn.filereadable(path) ~= 1 then
+    return ""
+  end
+  return table.concat(vim.fn.readfile(path), "\n")
+end
+
+local function codex_uses_chatgpt_login()
+  local override = (vim.env.CODEX_SIDEKICK_PROXY or ""):lower()
+  if vim.tbl_contains({ "1", "true", "yes", "on" }, override) then
+    return true
+  end
+  if vim.tbl_contains({ "0", "false", "no", "off" }, override) then
+    return false
+  end
+
+  local config_text = read_file("~/.codex/config.toml")
+  if config_text:find("ai%-route%-switcher: codex relay managed block", 1, false)
+    or config_text:find('preferred_auth_method%s*=%s*"apikey"')
+  then
+    return false
+  end
+
+  local auth_text = read_file("~/.codex/auth.json")
+  if auth_text == "" then
+    return false
+  end
+
+  local ok, auth = pcall(vim.json.decode, auth_text)
+  return ok and type(auth) == "table" and auth.auth_mode == "chatgpt"
+end
+
+local function clear_codex_proxy_env()
+  local env = {
+    NO_PROXY = vim.env.NO_PROXY or vim.env.no_proxy,
+    no_proxy = vim.env.NO_PROXY or vim.env.no_proxy,
+  }
+  for _, key in ipairs(proxy_env_keys) do
+    env[key] = false
+  end
+  return env
+end
+
 local function codex_proxy_env()
+  -- 只有 ChatGPT/Codex OAuth 登录需要走本地代理；公司中转/API key 模式必须清掉代理，否则可能连不到公司网关。
+  if not codex_uses_chatgpt_login() then
+    return clear_codex_proxy_env()
+  end
+
   -- 保持和 ~/.zshrc 里的 proxy_on 默认值一致；Neovide 不会自动 source ~/.zshrc，所以这里单独给 Codex 进程注入代理。
   local proxy_addr = vim.env.CODEX_PROXY_ADDR or "127.0.0.1:10808"
   local http_proxy = "http://" .. proxy_addr
