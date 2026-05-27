@@ -118,6 +118,39 @@ return {
       -- },
     },
 
+    init = function()
+      local function mark_image_readonly(buf)
+        vim.schedule(function()
+          if not vim.api.nvim_buf_is_valid(buf) then
+            return
+          end
+          if vim.bo[buf].filetype ~= "image" then
+            return
+          end
+
+          vim.bo[buf].readonly = true
+          vim.bo[buf].modifiable = false
+          vim.bo[buf].modified = false
+        end)
+      end
+
+      local group = vim.api.nvim_create_augroup("user_snacks_image_readonly", { clear = true })
+      vim.api.nvim_create_autocmd("FileType", {
+        group = group,
+        pattern = "image",
+        callback = function(event)
+          mark_image_readonly(event.buf)
+        end,
+      })
+      vim.api.nvim_create_autocmd("BufEnter", {
+        group = group,
+        pattern = { "*.png", "*.jpg", "*.jpeg", "*.gif", "*.bmp", "*.webp", "*.tiff", "*.heic", "*.avif" },
+        callback = function(event)
+          mark_image_readonly(event.buf)
+        end,
+      })
+    end,
+
     keys = (function()
       local sidebar_fts = {
         ["NvimTree"] = true,

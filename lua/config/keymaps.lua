@@ -9,6 +9,63 @@
 local resize_opts = { silent = true }
 local Terminal = require("config.terminal")
 
+
+local function copy_to_local_clipboard(lines, regtype)
+  local ok, osc52 = pcall(require, "vim.ui.clipboard.osc52")
+  if not ok then
+    vim.notify("OSC52 clipboard module is unavailable", vim.log.levels.ERROR)
+    return
+  end
+  if not lines or #lines == 0 then
+    vim.notify("Nothing to copy", vim.log.levels.WARN)
+    return
+  end
+  osc52.copy("+")(lines, regtype or "V")
+  vim.notify(("Copied %d line(s) to local clipboard via OSC52"):format(#lines), vim.log.levels.INFO)
+end
+
+-- 远程 SSH 编辑时，普通 y/p 只走 Neovim 内部寄存器，避免大段 yank 触发 OSC52 卡顿。
+-- 只有明确需要复制到本地系统剪贴板时，才手动执行 :Osc52Copy 或 <leader>cY。
+vim.api.nvim_create_user_command("Osc52Copy", function(opts)
+  if opts.range and opts.range > 0 then
+    local lines = vim.api.nvim_buf_get_lines(0, opts.line1 - 1, opts.line2, false)
+    copy_to_local_clipboard(lines, opts.line1 == opts.line2 and "v" or "V")
+  else
+    copy_to_local_clipboard(vim.fn.getreg('"', 1, true), vim.fn.getregtype('"'))
+  end
+end, { range = true, desc = "Copy range or unnamed register to local clipboard via OSC52" })
+
+vim.keymap.set("n", "<leader>cY", "<cmd>Osc52Copy<cr>",
+  { silent = true, desc = "Copy unnamed register to local clipboard" })
+vim.keymap.set("x", "<leader>cY", ":Osc52Copy<cr>", { silent = true, desc = "Copy selection to local clipboard" })
+
+
+
+-- Ctrl+Space 在部分 SSH/tmux/终端链路里会被编码成 <Nul>/<C-@>。
+-- 用普通 Neovim keymap 直接吞掉这些按键，避免它们 fallback 成终端控制字符/屏幕残影。
+local function manual_blink_completion_or_docs()
+  local ok, cmp = pcall(require, "blink.cmp")
+  if not ok then
+    return
+  end
+  if cmp.is_documentation_visible and cmp.is_documentation_visible() then
+    cmp.hide_documentation()
+    return
+  end
+  if cmp.is_menu_visible and cmp.is_menu_visible() then
+    cmp.show_documentation()
+    return
+  end
+  cmp.show()
+end
+
+for _, lhs in ipairs({ "<C-Space>", "<C-@>", "<Nul>" }) do
+  vim.keymap.set({ "i", "s" }, lhs, manual_blink_completion_or_docs, {
+    silent = true,
+    desc = "Blink: manual completion/docs without Ctrl-Space fallback",
+  })
+end
+
 vim.keymap.set({ "n", "i", "t" }, "<C-Left>", function()
   vim.cmd("vertical resize -4")
 end, vim.tbl_extend("force", resize_opts, { desc = "Decrease window width" }))
@@ -77,3 +134,9 @@ end, { desc = "Move terminal to bottom" })
 vim.api.nvim_create_user_command("TermToggleLayout", function()
   Terminal.toggle_layout(LazyVim.root())
 end, { desc = "Toggle terminal right/bottom" })
+
+
+vim.keymap.set("i", "<C-l>", "<C-o>zz", {
+  desc = "Center cursor line while inserting",
+  silent = true,
+})

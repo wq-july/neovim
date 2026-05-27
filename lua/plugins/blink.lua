@@ -1,25 +1,74 @@
-return {
+local function format_after_completion()
+  vim.schedule(function()
+    local ok, conform = pcall(require, "conform")
+    if not ok then
+      return
+    end
 
+    local bufnr = vim.api.nvim_get_current_buf()
+    if vim.g.autoformat == false or vim.b[bufnr].autoformat == false then
+      return
+    end
+    if vim.bo[bufnr].buftype ~= "" or not vim.bo[bufnr].modifiable then
+      return
+    end
+    -- 防止远程大文件在每次确认补全后频繁全量格式化造成卡顿。
+    if vim.api.nvim_buf_line_count(bufnr) > 3000 then
+      return
+    end
+
+    conform.format({
+      bufnr = bufnr,
+      async = true,
+      timeout_ms = 1200,
+      lsp_format = "fallback",
+      quiet = true,
+    })
+  end)
+end
+
+return {
  {
   "saghen/blink.cmp",
   opts = {
      keymap = {
-       preset = "none",  -- 关闭默认预设，自定义按键
-       -- 使用方向键选择补全项；不占用 j/k，避免写代码时输入冲突。
-       ["<Down>"] = { "select_next", "fallback" },
-       ["<Up>"] = { "select_prev", "fallback" },
-       -- Tab 键：优先确认补全；无补全时处理 sidekick.nvim 的 Next Edit Suggestion；最后 fallback。
-       ["<Tab>"] = {
-         "accept",
-         function()
-           local ok, sidekick = pcall(require, "sidekick")
-           return ok and sidekick.nes_jump_or_apply()
+       preset = "none", -- 关闭默认预设，自定义按键
+       -- 补全确认使用 Alt-y；Space/Enter/Ctrl-y/标点都保持原有用途，避免和普通输入、换行、滚动冲突。
+       -- Tab / Shift-Tab 只负责在补全菜单里向下 / 向上选择；菜单关闭时保持原本缩进行为。
+       ["<Tab>"] = { "select_next", "fallback" },
+       ["<S-Tab>"] = { "select_prev", "fallback" },
+       -- LazyVim/blink 默认会给 Ctrl-y 绑定 select_and_accept；这里显式禁用，保留原本滚动/编辑习惯。
+       ["<C-y>"] = false,
+       ["<M-y>"] = {
+         function(cmp)
+           if cmp.is_menu_visible and cmp.is_menu_visible() then
+             return cmp.accept({ callback = format_after_completion })
+           end
          end,
          "fallback",
        },
-      -- 其他快捷键
-      ["<C-e>"] = { "hide", "fallback" },      -- 隐藏补全菜单
+       -- 手动触发补全/文档；不要 fallback，避免 Ctrl+Space 被终端/tmux 当成 NUL/^@ 插入。
+       ["<C-Space>"] = { "show", "show_documentation" },
+       -- 许多终端/tmux 会把 Ctrl+Space 编码成 Ctrl-@；一起兜底映射。
+       ["<C-@>"] = { "show", "show_documentation" },
      },
+      sources = {
+        providers = {
+          lsp = {
+            -- 防止接受补全项时顺手应用 additionalTextEdits。
+            -- 典型副作用就是 Pyright/clangd 自动插入 import / #include。
+            transform_items = function(_, items)
+              for _, item in ipairs(items) do
+                item.additionalTextEdits = nil
+                if item.textEdit then
+                  item.textEdit.additionalTextEdits = nil
+                end
+              end
+              return items
+            end,
+          },
+        },
+      },
       appearance = {
         nerd_font_variant = "normal",
       },
@@ -29,7 +78,7 @@ return {
         menu = {
           auto_show = true,
           border = "rounded",
-          winblend = 22,
+          winblend = 0,
           winhighlight = "Normal:BlinkCmpMenu,FloatBorder:BlinkCmpMenuBorder,CursorLine:BlinkCmpMenuSelection,Search:None",
         },
         trigger = {
@@ -38,11 +87,11 @@ return {
           show_on_trigger_character = true,
         },
         documentation = {
-          auto_show = true,
-          auto_show_delay_ms = 200,
+          -- 远程 SSH 性能优化：不要自动弹出大块解释/文档浮窗，需要时手动查看 hover。
+          auto_show = false,
           window = {
             border = "rounded",
-            winblend = 22,
+            winblend = 0,
             winhighlight = "Normal:BlinkCmpDoc,FloatBorder:BlinkCmpDocBorder",
           },
         },
@@ -54,7 +103,7 @@ return {
         enabled = false,
         window = {
           border = "rounded",
-          winblend = 22,
+          winblend = 0,
           winhighlight = "Normal:BlinkCmpSignatureHelp,FloatBorder:BlinkCmpSignatureHelpBorder",
         },
       },
@@ -80,21 +129,18 @@ return {
   --   opts = {
   --
   --     ------------------------------------------------------------------
-  --     -- 1. 键位：自定义 Tab 键补全
+  --     -- 1. 键位：Enter 确认，Tab / Shift-Tab 选择
   --     ------------------------------------------------------------------
   --     keymap = {
-  --       preset = "none",  -- 关闭默认预设，自定义按键
+  --       preset = "none", -- 关闭默认预设，自定义按键
   --
-  --       -- 使用方向键选择补全项；不要占用 j/k。
-  --       ["<Down>"] = { "select_next", "fallback" },
-  --       ["<Up>"] = { "select_prev", "fallback" },
-  --
-  --       -- Tab 键确认补全
-  --       ["<Tab>"] = { "accept", "fallback" },
-  --
-  --       -- 其他快捷键
-  --       ["<C-e>"] = { "hide", "fallback" },      -- 隐藏补全菜单
-  --       ["<C-Space>"] = { "show", "fallback" },  -- 手动触发补全
+  --       -- Space/Enter/Ctrl-y/标点不绑定补全确认，避免普通输入、换行、滚动冲突。
+  --       ["<Tab>"] = { "select_next", "fallback" },
+  --       ["<S-Tab>"] = { "select_prev", "fallback" },
+  --       ["<C-y>"] = false,
+  --       ["<M-y>"] = { "accept", "fallback" },
+  --       ["<C-Space>"] = { "show", "show_documentation" },
+  --       ["<C-@>"] = { "show", "show_documentation" },
   --     },
   --
   --     ------------------------------------------------------------------

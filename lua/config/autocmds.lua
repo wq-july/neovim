@@ -96,3 +96,31 @@ vim.api.nvim_create_autocmd("LspAttach", {
     }, args.buf)
   end,
 })
+
+
+-- Hermes: stable LSP refresh command ---------------------------------------------
+local function restart_current_buffer_lsp()
+  local bufnr = vim.api.nvim_get_current_buf()
+  local clients = vim.lsp.get_clients and vim.lsp.get_clients({ bufnr = bufnr }) or vim.lsp.get_active_clients({ bufnr = bufnr })
+  for _, client in ipairs(clients) do
+    client.stop(true)
+  end
+  vim.defer_fn(function()
+    if vim.fn.exists(":LspStart") == 2 then
+      vim.cmd("LspStart")
+    else
+      vim.cmd("edit")
+    end
+  end, 300)
+end
+
+vim.api.nvim_create_user_command("LspRefresh", restart_current_buffer_lsp, {
+  desc = "Stop and restart LSP clients attached to the current buffer",
+})
+
+if vim.fn.exists(":LspRestart") == 0 then
+  vim.api.nvim_create_user_command("LspRestart", restart_current_buffer_lsp, {
+    desc = "Fallback LSP restart for current buffer",
+  })
+end
+-- End Hermes LSP refresh command --------------------------------------------------

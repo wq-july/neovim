@@ -6,10 +6,6 @@
 vim.opt.timeoutlen = 200
 vim.opt.ttimeoutlen = 30
 
--- LazyVim/Conform format-on-save switch. Keep enabled by default;
--- use :FormatDisable / :FormatEnable from lua/plugins/markdown-format.lua when needed.
-vim.g.autoformat = true
-
 -- Neovim 0.11+ 的统一浮窗边框：补全、hover、signature、诊断等未单独配置的窗口都走圆角。
 pcall(function()
   vim.o.winborder = "rounded"

@@ -67,6 +67,7 @@ return {
               analysis = {
                 autoSearchPaths = true,
                 useLibraryCodeForTypes = true,
+                autoImportCompletions = false,
                 typeCheckingMode = "basic",
               },
             },

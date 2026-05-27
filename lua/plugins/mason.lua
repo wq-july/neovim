@@ -22,6 +22,10 @@ return{
         "shellcheck",
         "shfmt",
         "clangd",
+        "pyright",
+        "prettier",
+        -- black is provided by /usr/local/bin/black and configured in Conform;
+        -- do not let Mason repeatedly try to install it during headless remote sessions.
       },
     },
   },
