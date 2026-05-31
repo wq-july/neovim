@@ -154,28 +154,6 @@ local function visual_selection_text()
 end
 
 local codex_layout = "right"
-local codex_tool_names = { "codex", "codex2", "codex3", "codex4" }
-local active_codex_name = "codex"
-
-local function codex_tool_config()
-  return {
-    cmd = { codex_cmd() },
-    env = codex_proxy_env(),
-    is_proc = "\\<codex\\>",
-    resume = { "resume" },
-    continue = { "resume", "--last" },
-    -- 禁止 Neovide/PATH 异常时自动弹浏览器；如果真的找不到命令，只显示错误提示。
-    url = false,
-  }
-end
-
-local function codex_tool_index(name)
-  for index, tool_name in ipairs(codex_tool_names) do
-    if tool_name == name then
-      return index
-    end
-  end
-end
 
 local function codex_split_opts(layout)
   return {
@@ -206,17 +184,8 @@ local function set_codex_config_layout(layout)
   win.wo = vim.tbl_deep_extend("force", win.wo or {}, codex_panel_wo())
 end
 
-local function codex_states(name)
-  local state = require("sidekick.cli.state")
-  if name then
-    return state.get({ name = name, attached = true })
-  end
-
-  local states = {}
-  for _, tool_name in ipairs(codex_tool_names) do
-    vim.list_extend(states, state.get({ name = tool_name, attached = true }))
-  end
-  return states
+local function codex_states()
+  return require("sidekick.cli.state").get({ name = "codex", attached = true })
 end
 
 local function current_codex_layout()
@@ -254,15 +223,13 @@ local function apply_codex_layout(layout)
   end
 end
 
-local function show_codex(layout, focus, name)
-  name = name or active_codex_name
-  active_codex_name = name
+local function show_codex(layout, focus)
   layout = layout or codex_layout
   focus = focus ~= false
   apply_codex_layout(layout)
 
   local shown_existing = false
-  for _, state in ipairs(codex_states(name)) do
+  for _, state in ipairs(codex_states()) do
     local terminal = state.terminal
     if terminal then
       if not terminal:is_open() then
@@ -276,57 +243,25 @@ local function show_codex(layout, focus, name)
   end
 
   if not shown_existing then
-    require("sidekick.cli").show({ name = name, focus = focus })
+    require("sidekick.cli").show({ name = "codex", focus = focus })
   end
 end
 
-local function show_codex_slot(index, layout, focus)
-  local name = codex_tool_names[index]
-  if not name then
-    vim.notify("Codex slot " .. tostring(index) .. " is not configured", vim.log.levels.WARN)
-    return
-  end
-  show_codex(layout, focus, name)
-end
-
-local function toggle_all_codex()
-  local states = codex_states()
+local function toggle_codex()
   local has_open = false
-
-  for _, state in ipairs(states) do
+  for _, state in ipairs(codex_states()) do
     if state.terminal and state.terminal:is_open() then
+      state.terminal:hide()
       has_open = true
-      break
     end
   end
-
-  if has_open then
-    for _, state in ipairs(states) do
-      if state.terminal and state.terminal:is_open() then
-        state.terminal:hide()
-      end
-    end
-    return
-  end
-
-  local shown_existing = false
-  apply_codex_layout(codex_layout)
-  for _, state in ipairs(states) do
-    if state.terminal then
-      state.terminal:show()
-      shown_existing = true
-    end
-  end
-
-  if shown_existing then
-    show_codex(codex_layout, true, active_codex_name)
-  else
+  if not has_open then
     show_codex(codex_layout, true)
   end
 end
 
 local function focus_or_blur_codex()
-  for _, state in ipairs(codex_states(active_codex_name)) do
+  for _, state in ipairs(codex_states()) do
     local terminal = state.terminal
     if terminal and terminal:is_open() then
       if terminal:is_focused() then
@@ -343,12 +278,6 @@ end
 local function toggle_codex_layout()
   local layout = current_codex_layout()
   show_codex(layout == "right" and "bottom" or "right", true)
-end
-
-local function cycle_codex()
-  local index = codex_tool_index(active_codex_name) or 1
-  index = index % #codex_tool_names + 1
-  show_codex_slot(index, codex_layout, true)
 end
 
 return {
@@ -375,14 +304,6 @@ return {
       vim.api.nvim_create_user_command("CodexToggleLayout", function()
         toggle_codex_layout()
       end, { desc = "Toggle Sidekick Codex CLI right/bottom" })
-      vim.api.nvim_create_user_command("CodexNext", function()
-        cycle_codex()
-      end, { desc = "Cycle Sidekick Codex CLI slot" })
-      for index, _ in ipairs(codex_tool_names) do
-        vim.api.nvim_create_user_command("Codex" .. index, function()
-          show_codex_slot(index, codex_layout, true)
-        end, { desc = "Show Sidekick Codex CLI slot " .. index })
-      end
     end,
     opts = {
       nes = {
@@ -390,10 +311,12 @@ return {
       },
       cli = {
         tools = {
-          codex = codex_tool_config(),
-          codex2 = codex_tool_config(),
-          codex3 = codex_tool_config(),
-          codex4 = codex_tool_config(),
+          codex = {
+            cmd = { codex_cmd() },
+            env = codex_proxy_env(),
+            -- 禁止 Neovide/PATH 异常时自动弹浏览器；如果真的找不到命令，只显示错误提示。
+            url = false,
+          },
         },
         -- 不使用 sidekick 的 tmux/zellij 持久化，保持 AI CLI 直接运行在 Neovim split 里。
         mux = {
@@ -435,12 +358,12 @@ return {
       {
         "<leader>ac",
         function()
-          -- 不关闭/销毁 Codex 进程：如果任意 AI 窗口已打开就隐藏全部；如果都隐藏了就显示全部已启动窗口。
-          -- 这样多个 Codex 分屏可以一起收起/恢复，同时保留各自运行中的 session。
-          toggle_all_codex()
+          -- 不关闭/销毁 Codex 进程：如果窗口已打开就只隐藏窗口；如果已隐藏或未启动就显示/启动。
+          -- 这样再次打开时可以复用仍在运行的 Codex session，避免重复启动导致卡顿。
+          toggle_codex()
         end,
         mode = { "n", "x" },
-        desc = "AI: show/hide all Sidekick Codex CLIs (keep processes)",
+        desc = "AI: show/hide Sidekick Codex CLI (keep process)",
       },
       {
         "<leader>ar",
@@ -467,46 +390,6 @@ return {
         desc = "AI: toggle Sidekick Codex CLI right/bottom",
       },
       {
-        "<leader>an",
-        function()
-          cycle_codex()
-        end,
-        mode = { "n", "x" },
-        desc = "AI: cycle Sidekick Codex CLI slot",
-      },
-      {
-        "<leader>a1",
-        function()
-          show_codex_slot(1, codex_layout, true)
-        end,
-        mode = { "n", "x" },
-        desc = "AI: show Codex slot 1",
-      },
-      {
-        "<leader>a2",
-        function()
-          show_codex_slot(2, codex_layout, true)
-        end,
-        mode = { "n", "x" },
-        desc = "AI: show Codex slot 2",
-      },
-      {
-        "<leader>a3",
-        function()
-          show_codex_slot(3, codex_layout, true)
-        end,
-        mode = { "n", "x" },
-        desc = "AI: show Codex slot 3",
-      },
-      {
-        "<leader>a4",
-        function()
-          show_codex_slot(4, codex_layout, true)
-        end,
-        mode = { "n", "x" },
-        desc = "AI: show Codex slot 4",
-      },
-      {
         "<leader>ad",
         toggle_diffview,
         mode = "n",
@@ -526,7 +409,7 @@ return {
               set_codex_config_layout(codex_layout)
               local text = require("sidekick.text").to_text(input .. "\n\n" .. selection)
               require("sidekick.cli").send({
-                name = active_codex_name,
+                name = "codex",
                 text = text,
                 focus = true,
                 submit = true,
@@ -541,7 +424,7 @@ return {
         "<leader>ap",
         function()
           set_codex_config_layout(codex_layout)
-          require("sidekick.cli").prompt({ name = active_codex_name })
+          require("sidekick.cli").prompt({ name = "codex" })
         end,
         mode = { "n", "x" },
         desc = "AI: Sidekick prompt library",
@@ -550,7 +433,7 @@ return {
         "<leader>af",
         function()
           set_codex_config_layout(codex_layout)
-          require("sidekick.cli").send({ name = active_codex_name, msg = "{file}", focus = true })
+          require("sidekick.cli").send({ name = "codex", msg = "{file}", focus = true })
         end,
         mode = "n",
         desc = "AI: send file to Sidekick",
@@ -559,7 +442,7 @@ return {
         "<leader>at",
         function()
           set_codex_config_layout(codex_layout)
-          require("sidekick.cli").send({ name = active_codex_name, msg = "{this}", focus = true })
+          require("sidekick.cli").send({ name = "codex", msg = "{this}", focus = true })
         end,
         mode = { "n", "x" },
         desc = "AI: send current context to Sidekick",

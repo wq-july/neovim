@@ -24,8 +24,7 @@ local function copy_to_local_clipboard(lines, regtype)
   vim.notify(("Copied %d line(s) to local clipboard via OSC52"):format(#lines), vim.log.levels.INFO)
 end
 
--- 远程 SSH 编辑时，普通 y/p 只走 Neovim 内部寄存器，避免大段 yank 触发 OSC52 卡顿。
--- 只有明确需要复制到本地系统剪贴板时，才手动执行 :Osc52Copy 或 <leader>cY。
+-- 远程 SSH 编辑时，普通 y 默认走 OSC52；保留 :Osc52Copy / <leader>cY 作为显式重发剪贴板的备用方式。
 vim.api.nvim_create_user_command("Osc52Copy", function(opts)
   if opts.range and opts.range > 0 then
     local lines = vim.api.nvim_buf_get_lines(0, opts.line1 - 1, opts.line2, false)

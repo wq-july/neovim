@@ -16,15 +16,30 @@ pcall(function()
 end)
 
 local function configure_remote_clipboard()
-  -- SSH/tmux 远程编辑时，默认只使用 Neovim 内部寄存器。
-  -- 不自动启用 OSC52/unnamedplus：否则普通 y 会把大段代码传回本地终端剪贴板，跨 SSH 时明显卡顿。
+  -- SSH/tmux 远程编辑时，默认用 OSC52 把 yanks 复制到本地系统剪贴板。
   if not (vim.env.SSH_TTY or vim.env.SSH_CONNECTION or vim.env.TMUX) then
     return
   end
 
-  vim.g.clipboard = nil
-  vim.opt.clipboard = ""
-  vim.g.remote_osc52_manual_only = true
+  local ok, osc52 = pcall(require, "vim.ui.clipboard.osc52")
+  if not ok then
+    return
+  end
+
+  vim.g.clipboard = {
+    name = "OSC52",
+    copy = {
+      ["+"] = osc52.copy("+"),
+      ["*"] = osc52.copy("*"),
+    },
+    paste = {
+      ["+"] = osc52.paste("+"),
+      ["*"] = osc52.paste("*"),
+    },
+    cache_enabled = 0,
+  }
+  vim.opt.clipboard = "unnamedplus"
+  vim.g.remote_osc52_manual_only = false
 end
 
 configure_remote_clipboard()
