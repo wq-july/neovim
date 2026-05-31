@@ -15,9 +15,13 @@ pcall(function()
   vim.o.winborder = "rounded"
 end)
 
+-- Keep popups opaque; rounded borders are configured separately.
+vim.opt.winblend = 0
+vim.opt.pumblend = 0
+
 local function configure_remote_clipboard()
-  -- SSH/tmux 远程编辑时，默认只使用 Neovim 内部寄存器。
-  -- 不自动启用 OSC52/unnamedplus：否则普通 y 会把大段代码传回本地终端剪贴板，跨 SSH 时明显卡顿。
+  -- SSH/tmux remote editing defaults to Neovim internal registers.
+  -- Use :Osc52Copy or <leader>cy when copying to the local system clipboard is needed.
   if not (vim.env.SSH_TTY or vim.env.SSH_CONNECTION or vim.env.TMUX) then
     return
   end

@@ -20,15 +20,15 @@ return {
         enabled = true,
         doc = {
           enabled = true,
-          -- Markdown 图片：支持 Kitty/Ghostty；tmux 需要 allow-passthrough。
+          -- Markdown 图片：Kitty/Ghostty 支持 inline；WezTerm 仅支持有限图形协议，使用浮窗更稳。
           -- Neovide 不是终端，不能使用 Kitty Graphics Protocol 内联显示。
-          inline = true,
+          inline = vim.env.TERM_PROGRAM ~= "WezTerm",
           float = true,
           max_width = 80,
           max_height = 40,
         },
-        -- Markdown 公式渲染保持开启；普通图片与公式都交给 Snacks image 处理。
-        math = { enabled = true, latex = { font_size = "small" } },
+        -- 保留图片渲染能力；公式渲染先关闭，避免在 Neovide 中出现低质量近似效果。
+        math = { enabled = false },
         convert = { notify = false },
       },
 
@@ -61,6 +61,16 @@ return {
       notifier = { enabled = true, style = "notification" },
       quickfile = { enabled = true },
       scroll = { enabled = false }, -- 可选：滚动动画
+
+      picker = {
+        sources = {
+          explorer = {
+            -- qiang.wang contains local case files ignored by this repo's
+            -- *.txt / *.pkl rules, but they should remain visible in the tree.
+            include = { "qiang.wang/**" },
+          },
+        },
+      },
 
       -- 文本对象和状态栏
       scope = { enabled = true, cursor = false }, 

@@ -13,7 +13,7 @@ return {
             padding = { 0, 1 },
           },
           win_options = {
-            winblend = 22,
+            winblend = 0,
             winhighlight = {
               Normal = "NormalFloat",
               FloatBorder = "FloatBorder",
@@ -29,7 +29,7 @@ return {
               padding = { 0, 1 },
             },
             win_options = {
-              winblend = 22,
+              winblend = 0,
               winhighlight = {
                 Normal = "NormalFloat",
                 FloatBorder = "FloatBorder",
@@ -44,7 +44,7 @@ return {
               padding = { 0, 1 },
             },
             win_options = {
-              winblend = 22,
+              winblend = 0,
             },
           },
         },
@@ -55,7 +55,7 @@ return {
               padding = { 0, 1 },
             },
             win_options = {
-              winblend = 22,
+              winblend = 0,
             },
           },
         },

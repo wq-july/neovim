@@ -9,6 +9,49 @@
 
 local rounded_border = "rounded"
 
+local function keep_float_opaque(win)
+  if not (win and vim.api.nvim_win_is_valid(win)) then
+    return
+  end
+  local ok, config = pcall(vim.api.nvim_win_get_config, win)
+  if not ok or config.relative == "" then
+    return
+  end
+  vim.wo[win].winblend = 0
+end
+
+local function keep_all_floats_opaque()
+  for _, win in ipairs(vim.api.nvim_list_wins()) do
+    keep_float_opaque(win)
+  end
+end
+
+if not vim.g.user_opaque_open_win_wrapped then
+  vim.g.user_opaque_open_win_wrapped = true
+  local original_open_win = vim.api.nvim_open_win
+  vim.api.nvim_open_win = function(buf, enter, config)
+    local win = original_open_win(buf, enter, config)
+    if config and config.relative and config.relative ~= "" then
+      vim.schedule(function()
+        keep_float_opaque(win)
+      end)
+      vim.defer_fn(function()
+        keep_float_opaque(win)
+      end, 20)
+    end
+    return win
+  end
+end
+
+
+vim.api.nvim_create_autocmd({ "WinNew", "WinEnter" }, {
+  group = vim.api.nvim_create_augroup("user_opaque_floats", { clear = true }),
+  callback = function()
+    vim.schedule(keep_all_floats_opaque)
+  end,
+})
+
+
 local function diagnostic_virtual_line_format(diagnostic)
   local source = diagnostic.source and diagnostic.source ~= "" and ("[" .. diagnostic.source .. "] ") or ""
   local code = diagnostic.code and diagnostic.code ~= "" and (tostring(diagnostic.code) .. ": ") or ""

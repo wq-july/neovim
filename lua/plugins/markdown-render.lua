@@ -32,10 +32,27 @@ return {
       bullet = {
         icons = { "•", "◦", "▪", "▫" },
       },
+      checkbox = {
+        enabled = true,
+        unchecked = { icon = "󰄱 " },
+        checked = { icon = "󰱒 " },
+      },
+      quote = {
+        enabled = true,
+        icon = "▌",
+      },
+      pipe_table = {
+        enabled = true,
+        preset = "round",
+        style = "full",
+        cell = "padded",
+      },
+      latex = {
+        enabled = false,
+      },
     },
     keys = {
       { "<leader>mr", "<cmd>RenderMarkdown toggle<cr>", desc = "[Markdown] Toggle render" },
-      { "<leader>mp", "<cmd>RenderMarkdown preview<cr>", desc = "[Markdown] Side preview" },
       { "<leader>mb", "<cmd>RenderMarkdown buf_toggle<cr>", desc = "[Markdown] Toggle buffer render" },
     },
   },

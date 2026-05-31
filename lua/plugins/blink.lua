@@ -33,10 +33,11 @@ return {
   opts = {
      keymap = {
        preset = "none", -- 关闭默认预设，自定义按键
-       -- 补全确认使用 Alt-y；Space/Enter/Ctrl-y/标点都保持原有用途，避免和普通输入、换行、滚动冲突。
-       -- Tab / Shift-Tab 只负责在补全菜单里向下 / 向上选择；菜单关闭时保持原本缩进行为。
-       ["<Tab>"] = { "select_next", "fallback" },
-       ["<S-Tab>"] = { "select_prev", "fallback" },
+       -- Tab 确认当前补全项；菜单关闭时保持原本缩进行为。
+       ["<Tab>"] = { "accept", "fallback" },
+       -- 上下方向键只负责在补全菜单里选择候选项；菜单关闭时保持原本光标移动。
+       ["<Down>"] = { "select_next", "fallback" },
+       ["<Up>"] = { "select_prev", "fallback" },
        -- LazyVim/blink 默认会给 Ctrl-y 绑定 select_and_accept；这里显式禁用，保留原本滚动/编辑习惯。
        ["<C-y>"] = false,
        ["<M-y>"] = {

@@ -1,6 +1,6 @@
-local transparent_enabled = true
-local neovide_glass_opacity = 0.78
-local neovide_window_opacity = 0.90
+local transparent_enabled = false
+local neovide_normal_opacity = 1.0
+local neovide_window_opacity = 1.0
 
 local function is_neovide_gui()
   return vim.g.neovide or vim.env.NVIM_GUI == "neovide"
@@ -15,25 +15,22 @@ local function set_bg(group, bg)
   pcall(vim.api.nvim_set_hl, 0, group, hl)
 end
 
-local function apply_neovide_glass()
+local function apply_neovide_window()
   if not is_neovide_gui() then
     return
   end
 
-  -- normal_opacity 只控制主编辑背景透明度；真正的整窗背景模糊取决于系统合成器。
   vim.g.neovide_opacity = neovide_window_opacity
-  vim.g.neovide_normal_opacity = neovide_glass_opacity
+  vim.g.neovide_normal_opacity = neovide_normal_opacity
   vim.g.neovide_text_gamma = 0.9
   vim.g.neovide_text_contrast = 0.5
 
-  -- 在支持的窗口系统上请求整窗 blur；GNOME/X11 通常只会得到透明，不会得到真实模糊。
-  vim.g.neovide_window_blurred = true
+  vim.g.neovide_window_blurred = false
 
-  -- Keep floating windows in the same glass style, just a bit clearer.
   vim.g.neovide_floating_shadow = false
   vim.g.neovide_floating_z_height = 4
-  vim.g.neovide_floating_blur_amount_x = 12.0
-  vim.g.neovide_floating_blur_amount_y = 12.0
+  vim.g.neovide_floating_blur_amount_x = 0.0
+  vim.g.neovide_floating_blur_amount_y = 0.0
 end
 
 local function apply_diagnostic_overrides()
@@ -148,24 +145,24 @@ local function apply_vscode_overrides()
       highlight TabLine guibg=NONE ctermbg=NONE guifg=#a0a0a0
       highlight TabLineFill guibg=NONE ctermbg=NONE
       highlight TabLineSel guibg=NONE ctermbg=NONE guifg=#ffffff
-      highlight Pmenu guibg=#1e1e1e ctermbg=234 blend=20
-      highlight PmenuExtra guibg=#1e1e1e ctermbg=234 blend=20
-      highlight PmenuKind guibg=#1e1e1e ctermbg=234 blend=20
+      highlight Pmenu guibg=#1e1e1e ctermbg=234
+      highlight PmenuExtra guibg=#1e1e1e ctermbg=234
+      highlight PmenuKind guibg=#1e1e1e ctermbg=234
       highlight PmenuSbar guibg=NONE ctermbg=NONE
-      highlight PmenuThumb guibg=#5f5f5f ctermbg=240 blend=15
-      highlight PmenuSel guibg=#333333 guifg=#ffffff ctermbg=236 blend=15
-      highlight NormalFloat guibg=#1e1e1e ctermbg=234 blend=20
-      highlight FloatBorder guibg=#1e1e1e ctermbg=234 guifg=#6f6f6f ctermfg=242 blend=20
-      highlight FloatTitle guibg=#1e1e1e ctermbg=234 guifg=#e8e8e8 blend=20
-      highlight NoicePopup guibg=#1e1e1e ctermbg=234 blend=20
-      highlight NoicePopupBorder guibg=#1e1e1e ctermbg=234 guifg=#6f6f6f ctermfg=242 blend=20
-      highlight BlinkCmpMenu guibg=#1e1e1e ctermbg=234 blend=20
-      highlight BlinkCmpMenuBorder guibg=#1e1e1e ctermbg=234 guifg=#6f6f6f ctermfg=242 blend=20
-      highlight BlinkCmpMenuSelection guibg=#333333 guifg=#ffffff ctermbg=236 blend=15
-      highlight BlinkCmpDoc guibg=#1e1e1e ctermbg=234 blend=20
-      highlight BlinkCmpDocBorder guibg=#1e1e1e ctermbg=234 guifg=#6f6f6f ctermfg=242 blend=20
-      highlight BlinkCmpSignatureHelp guibg=#1e1e1e ctermbg=234 blend=20
-      highlight BlinkCmpSignatureHelpBorder guibg=#1e1e1e ctermbg=234 guifg=#6f6f6f ctermfg=242 blend=20
+      highlight PmenuThumb guibg=#5f5f5f ctermbg=240
+      highlight PmenuSel guibg=#333333 guifg=#ffffff ctermbg=236
+      highlight NormalFloat guibg=#1e1e1e ctermbg=234
+      highlight FloatBorder guibg=#1e1e1e ctermbg=234 guifg=#6f6f6f ctermfg=242
+      highlight FloatTitle guibg=#1e1e1e ctermbg=234 guifg=#e8e8e8
+      highlight NoicePopup guibg=#1e1e1e ctermbg=234
+      highlight NoicePopupBorder guibg=#1e1e1e ctermbg=234 guifg=#6f6f6f ctermfg=242
+      highlight BlinkCmpMenu guibg=#1e1e1e ctermbg=234
+      highlight BlinkCmpMenuBorder guibg=#1e1e1e ctermbg=234 guifg=#6f6f6f ctermfg=242
+      highlight BlinkCmpMenuSelection guibg=#333333 guifg=#ffffff ctermbg=236
+      highlight BlinkCmpDoc guibg=#1e1e1e ctermbg=234
+      highlight BlinkCmpDocBorder guibg=#1e1e1e ctermbg=234 guifg=#6f6f6f ctermfg=242
+      highlight BlinkCmpSignatureHelp guibg=#1e1e1e ctermbg=234
+      highlight BlinkCmpSignatureHelpBorder guibg=#1e1e1e ctermbg=234 guifg=#6f6f6f ctermfg=242
       highlight NvimTreeNormal guibg=NONE ctermbg=NONE
       highlight NvimTreeEndOfBuffer guibg=NONE ctermbg=NONE
       highlight NvimTreeVertSplit guibg=NONE ctermbg=NONE
@@ -197,10 +194,20 @@ local function apply_vscode_overrides()
       highlight BufferLineBackground guibg=#1e1e1e ctermbg=234
       highlight BufferLineFill guibg=#1e1e1e ctermbg=234
 
-      highlight Pmenu guibg=#252526 ctermbg=235
+      highlight Pmenu guibg=#1e1e1e ctermbg=234
       highlight PmenuSel guibg=#094771 ctermbg=24
-      highlight NormalFloat guibg=#252526 ctermbg=235
-      highlight FloatBorder guibg=#252526 ctermbg=235 guifg=#3e3e42 ctermfg=237
+      highlight NormalFloat guibg=#1e1e1e ctermbg=234
+      highlight FloatBorder guibg=#1e1e1e ctermbg=234 guifg=#3e3e42 ctermfg=237
+      highlight FloatTitle guibg=#1e1e1e ctermbg=234 guifg=#d4d4d4
+      highlight NoicePopup guibg=#1e1e1e ctermbg=234
+      highlight NoicePopupBorder guibg=#1e1e1e ctermbg=234 guifg=#3e3e42 ctermfg=237
+      highlight BlinkCmpMenu guibg=#1e1e1e ctermbg=234
+      highlight BlinkCmpMenuBorder guibg=#1e1e1e ctermbg=234 guifg=#3e3e42 ctermfg=237
+      highlight BlinkCmpMenuSelection guibg=#094771 guifg=#ffffff ctermbg=24
+      highlight BlinkCmpDoc guibg=#1e1e1e ctermbg=234
+      highlight BlinkCmpDocBorder guibg=#1e1e1e ctermbg=234 guifg=#3e3e42 ctermfg=237
+      highlight BlinkCmpSignatureHelp guibg=#1e1e1e ctermbg=234
+      highlight BlinkCmpSignatureHelpBorder guibg=#1e1e1e ctermbg=234 guifg=#3e3e42 ctermfg=237
 
       highlight BufferCurrent guibg=#1e1e1e guifg=#ffffff
       highlight BufferCurrentIndex guibg=#1e1e1e guifg=#569cd6
@@ -233,9 +240,9 @@ return {
     priority = 1000,
     lazy = false,
     opts = {
-      transparent = true,
+      transparent = false,
       italic_comments = false,
-      disable_nvimtree_bg = true,
+      disable_nvimtree_bg = false,
       terminal_colors = true,
       color_overrides = {},
       group_overrides = {},
@@ -243,7 +250,7 @@ return {
     config = function(_, opts)
       vim.o.background = "dark"
 
-      apply_neovide_glass()
+      apply_neovide_window()
 
       require("vscode").setup(opts)
       vim.cmd.colorscheme("vscode")
