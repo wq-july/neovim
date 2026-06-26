@@ -6,9 +6,9 @@
 vim.opt.timeoutlen = 200
 vim.opt.ttimeoutlen = 30
 
--- LazyVim/Conform format-on-save switch. Keep enabled by default;
--- use :FormatDisable / :FormatEnable from lua/plugins/markdown-format.lua when needed.
-vim.g.autoformat = true
+-- Keep format-on-save disabled by default. Use <leader>mf for manual formatting,
+-- or :FormatEnable when automatic formatting is explicitly needed.
+vim.g.autoformat = false
 
 -- Neovim 0.11+ 的统一浮窗边框：补全、hover、signature、诊断等未单独配置的窗口都走圆角。
 pcall(function()
@@ -18,6 +18,26 @@ end)
 -- Keep popups opaque; rounded borders are configured separately.
 vim.opt.winblend = 0
 vim.opt.pumblend = 0
+
+-- Let Noice own the command line UI. Keeping this global avoids depending on
+-- whether remote GUI clients expose vim.g.neovide/NVIM_GUI inside the server.
+vim.opt.cmdheight = 0
+vim.opt.showcmd = false
+
+-- Windows Neovide -> SSH remote Nvim: keep the bottom UI compact.
+-- Without this, the global lualine/statusline can appear to float above one or
+-- two empty rows caused by the command area and/or GUI padding.
+local function is_neovide_gui()
+  return vim.g.neovide or vim.env.NVIM_GUI == "neovide"
+end
+
+if is_neovide_gui() then
+  vim.g.neovide_padding_top = 0
+  vim.g.neovide_padding_bottom = 0
+  vim.g.neovide_padding_left = 0
+  vim.g.neovide_padding_right = 0
+  vim.opt.linespace = 0
+end
 
 local function configure_remote_clipboard()
   -- SSH/tmux remote editing defaults to Neovim internal registers.

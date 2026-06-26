@@ -53,6 +53,8 @@ return {
       },
     },
     init = function()
+      vim.g.autoformat = false
+
       vim.api.nvim_create_autocmd("BufWritePre", {
         group = vim.api.nvim_create_augroup("HermesConformFormatOnSave", { clear = true }),
         callback = function(event)

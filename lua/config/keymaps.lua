@@ -39,6 +39,74 @@ vim.keymap.set("n", "<leader>cy", "<cmd>Osc52Copy<cr>",
 vim.keymap.set("x", "<leader>cy", ":Osc52Copy<cr>",
   { silent = true, desc = "Copy selection to local clipboard" })
 
+local function system_clipboard_text()
+  local ok, lines = pcall(vim.fn.getreg, "+", 1, true)
+  if not ok or not lines or #lines == 0 then
+    vim.notify("System clipboard is empty or unavailable", vim.log.levels.WARN)
+    return nil
+  end
+
+  local text = table.concat(lines, "\n")
+  local regtype = vim.fn.getregtype("+")
+  if regtype:sub(1, 1) == "V" then
+    text = text .. "\n"
+  end
+  return text
+end
+
+local function paste_from_system_clipboard()
+  local text = system_clipboard_text()
+  if not text then
+    return
+  end
+  vim.api.nvim_paste(text, false, -1)
+end
+
+local function paste_from_system_clipboard_to_terminal()
+  local text = system_clipboard_text()
+  if not text then
+    return
+  end
+
+  local job = vim.b.terminal_job_id
+  if not job then
+    vim.notify("Current buffer is not a terminal job", vim.log.levels.WARN)
+    return
+  end
+
+  -- Match normal terminal-emulator paste behavior: bracketed paste prevents
+  -- shells/REPLs from treating pasted newlines as immediate commands.
+  vim.api.nvim_chan_send(job, "\027[200~" .. text .. "\027[201~")
+end
+
+local function paste_from_system_clipboard_to_cmdline()
+  local text = system_clipboard_text()
+  if not text then
+    return ""
+  end
+
+  -- In command-line mode (/, ?, :) a literal newline can submit/execute the
+  -- command.  Keep Ctrl+Shift+V as "paste text here" by converting newlines to
+  -- a literal \n sequence, which is also useful in search patterns.
+  text = text:gsub("\r\n", "\n"):gsub("\r", "\n"):gsub("\n", "\\n")
+  return text
+end
+
+vim.keymap.set({ "i", "s" }, "<C-S-v>", paste_from_system_clipboard, {
+  silent = true,
+  desc = "Paste from system clipboard",
+})
+vim.keymap.set("c", "<C-S-v>", paste_from_system_clipboard_to_cmdline, {
+  expr = true,
+  replace_keycodes = false,
+  silent = true,
+  desc = "Paste from system clipboard into command line/search",
+})
+vim.keymap.set("t", "<C-S-v>", paste_from_system_clipboard_to_terminal, {
+  silent = true,
+  desc = "Paste from system clipboard into terminal",
+})
+
 
 
 -- Ctrl+Space 在部分 SSH/tmux/终端链路里会被编码成 <Nul>/<C-@>。
