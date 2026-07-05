@@ -171,14 +171,17 @@ end
 
 local codex_layout = "right"
 local codex_tool_names = { "codex", "codex2", "codex3", "codex4" }
+local codex_ollama_tool_names = { "codex_ollama" }
 local hermes_tool_names = { "hermes", "hermes2", "hermes3", "hermes4" }
-local primary_ai_tool_names = { "codex", "hermes" }
+local primary_ai_tool_names = { "codex", "codex_ollama", "hermes" }
 local ai_tool_names = {}
 vim.list_extend(ai_tool_names, codex_tool_names)
+vim.list_extend(ai_tool_names, codex_ollama_tool_names)
 vim.list_extend(ai_tool_names, hermes_tool_names)
 local active_ai_name = "codex"
 local active_ai_by_family = {
   codex = "codex",
+  ollama = "codex_ollama",
   hermes = "hermes",
 }
 
@@ -190,6 +193,26 @@ local function codex_tool_config()
     resume = { "resume" },
     continue = { "resume", "--last" },
     -- 禁止 Neovide/PATH 异常时自动弹浏览器；如果真的找不到命令，只显示错误提示。
+    url = false,
+  }
+end
+
+local function codex_ollama_cmd()
+  local cmd = vim.fn.expand("~/.local/bin/codex-ollama")
+  return vim.fn.executable(cmd) == 1 and cmd or "codex-ollama"
+end
+
+local function codex_ollama_tool_config()
+  return {
+    cmd = { codex_ollama_cmd() },
+    env = codex_proxy_env(),
+    is_proc = function(_, proc)
+      return proc.cmd:find("codex-ollama", 1, true) ~= nil
+        or proc.cmd:find("-p ollama", 1, true) ~= nil
+        or proc.cmd:find("--profile ollama", 1, true) ~= nil
+    end,
+    resume = { "resume" },
+    continue = { "resume", "--last" },
     url = false,
   }
 end
@@ -206,6 +229,10 @@ local function hermes_tool_config()
 end
 
 local function ai_tool_label(name)
+  if name == "codex_ollama" then
+    return "Codex Ollama"
+  end
+
   local hermes_index = name:match("^hermes(%d*)$")
   if hermes_index then
     return hermes_index == "" and "Hermes 1" or ("Hermes " .. hermes_index)
@@ -219,6 +246,9 @@ local function ai_tool_label(name)
 end
 
 local function ai_tool_family(name)
+  if name == "codex_ollama" then
+    return "ollama"
+  end
   if name:match("^codex%d*$") then
     return "codex"
   end
@@ -236,7 +266,13 @@ local function ai_tool_index(name)
 end
 
 local function ai_family_tool_names(family)
-  return family == "hermes" and hermes_tool_names or codex_tool_names
+  if family == "hermes" then
+    return hermes_tool_names
+  end
+  if family == "ollama" then
+    return codex_ollama_tool_names
+  end
+  return codex_tool_names
 end
 
 local function codex_split_opts(layout)
@@ -667,6 +703,10 @@ local function show_codex_slot(index, layout, focus)
   show_codex(layout, focus, name)
 end
 
+local function show_codex_ollama(layout, focus)
+  activate_ai_family("ollama", layout, focus)
+end
+
 local function show_hermes(layout, focus)
   activate_ai_family("hermes", layout, focus)
 end
@@ -777,6 +817,9 @@ return {
       vim.api.nvim_create_user_command("AISelect", function()
         select_ai_tool()
       end, { desc = "Select active Sidekick AI CLI" })
+      vim.api.nvim_create_user_command("CodexOllama", function()
+        show_codex_ollama(codex_layout, true)
+      end, { desc = "Show Sidekick Codex Ollama CLI" })
       vim.api.nvim_create_user_command("Hermes", function()
         show_hermes(codex_layout, true)
       end, { desc = "Show Sidekick Hermes CLI" })
@@ -805,6 +848,7 @@ return {
           codex2 = codex_tool_config(),
           codex3 = codex_tool_config(),
           codex4 = codex_tool_config(),
+          codex_ollama = codex_ollama_tool_config(),
           hermes = hermes_tool_config(),
           hermes2 = hermes_tool_config(),
           hermes3 = hermes_tool_config(),
@@ -854,6 +898,14 @@ return {
         end,
         mode = { "n", "x" },
         desc = "AI: toggle Codex",
+      },
+      {
+        "<leader>ao",
+        function()
+          toggle_ai_tool("codex_ollama", codex_layout, true)
+        end,
+        mode = { "n", "x" },
+        desc = "AI: toggle Codex Ollama",
       },
       {
         "<leader>ah",

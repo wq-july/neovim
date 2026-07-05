@@ -57,3 +57,5 @@ vim.api.nvim_create_autocmd("User", {
   pattern = "VeryLazy",
   callback = configure_remote_clipboard,
 })
+
+vim.opt.colorcolumn = "100"
