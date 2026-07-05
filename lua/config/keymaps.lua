@@ -4,8 +4,8 @@
 
 -- AI workflow keymaps live in lua/plugins/sidekick.lua.
 
--- Resize Neovim splits/panels with Ctrl + arrow keys.
--- Useful in Neovide where AI/terminal panels are normal splits.
+-- Resize Neovim splits/panels. Avoid Ctrl+arrow because macOS often reserves it.
+-- Alt+h/j/k/l works well over SSH when Option is sent as Meta; <leader>r* is a normal-mode fallback.
 local resize_opts = { silent = true }
 local Terminal = require("config.terminal")
 
@@ -134,16 +134,29 @@ for _, lhs in ipairs({ "<C-Space>", "<C-@>", "<Nul>" }) do
   })
 end
 
-vim.keymap.set({ "n", "i", "t" }, "<C-Left>", function()
+vim.keymap.set({ "n", "i", "t" }, "<M-h>", function()
   vim.cmd("vertical resize -4")
 end, vim.tbl_extend("force", resize_opts, { desc = "Decrease window width" }))
-vim.keymap.set({ "n", "i", "t" }, "<C-Right>", function()
+vim.keymap.set({ "n", "i", "t" }, "<M-l>", function()
   vim.cmd("vertical resize +4")
 end, vim.tbl_extend("force", resize_opts, { desc = "Increase window width" }))
-vim.keymap.set({ "n", "i", "t" }, "<C-Up>", function()
+vim.keymap.set({ "n", "i", "t" }, "<M-k>", function()
   vim.cmd("resize -2")
 end, vim.tbl_extend("force", resize_opts, { desc = "Decrease window height" }))
-vim.keymap.set({ "n", "i", "t" }, "<C-Down>", function()
+vim.keymap.set({ "n", "i", "t" }, "<M-j>", function()
+  vim.cmd("resize +2")
+end, vim.tbl_extend("force", resize_opts, { desc = "Increase window height" }))
+
+vim.keymap.set("n", "<leader>rh", function()
+  vim.cmd("vertical resize -4")
+end, vim.tbl_extend("force", resize_opts, { desc = "Decrease window width" }))
+vim.keymap.set("n", "<leader>rl", function()
+  vim.cmd("vertical resize +4")
+end, vim.tbl_extend("force", resize_opts, { desc = "Increase window width" }))
+vim.keymap.set("n", "<leader>rk", function()
+  vim.cmd("resize -2")
+end, vim.tbl_extend("force", resize_opts, { desc = "Decrease window height" }))
+vim.keymap.set("n", "<leader>rj", function()
   vim.cmd("resize +2")
 end, vim.tbl_extend("force", resize_opts, { desc = "Increase window height" }))
 
