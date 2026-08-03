@@ -127,16 +127,9 @@ vim.api.nvim_create_autocmd("LspAttach", {
     client.server_capabilities.semanticTokensProvider = nil
     client.server_capabilities.documentHighlightProvider = false
 
-    vim.diagnostic.config({
-      underline = false,
-      update_in_insert = false,
-      severity_sort = true,
-      virtual_text = false,
-      virtual_lines = {
-        current_line = true,
-        format = diagnostic_virtual_line_format,
-      },
-    }, args.buf)
+    -- vim.diagnostic.config() accepts a diagnostic *namespace*, not a buffer
+    -- number.  The global diagnostic settings above already cover clangd, so
+    -- avoid passing args.buf here (which is invalid on current Neovim).
   end,
 })
 

@@ -39,23 +39,23 @@ if is_neovide_gui() then
   vim.opt.linespace = 0
 end
 
-local function configure_remote_clipboard()
-  -- SSH/tmux remote editing defaults to Neovim internal registers.
-  -- Use :Osc52Copy or <leader>cy when copying to the local system clipboard is needed.
-  if not (vim.env.SSH_TTY or vim.env.SSH_CONNECTION or vim.env.TMUX) then
-    return
+local function configure_clipboard()
+  -- On SSH, OSC52 writes yanks to the clipboard of the local terminal/GUI.
+  -- Do not treat local tmux sessions as remote: they can use the normal provider.
+  if vim.env.SSH_TTY or vim.env.SSH_CONNECTION then
+    vim.g.clipboard = "osc52"
+  else
+    vim.g.clipboard = nil
   end
 
-  vim.g.clipboard = nil
-  vim.opt.clipboard = ""
-  vim.g.remote_osc52_manual_only = true
+  vim.opt.clipboard = "unnamedplus"
 end
 
-configure_remote_clipboard()
+configure_clipboard()
 
 vim.api.nvim_create_autocmd("User", {
   pattern = "VeryLazy",
-  callback = configure_remote_clipboard,
+  callback = configure_clipboard,
 })
 
 vim.opt.colorcolumn = "100"

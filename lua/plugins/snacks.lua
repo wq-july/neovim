@@ -70,6 +70,27 @@ return {
             include = { "qiang.wang/**" },
           },
         },
+        win = {
+          input = {
+            keys = {
+              -- Snacks 默认将 <C-v> 用于纵向分屏打开结果；搜索框中改为粘贴剪贴板内容。
+              ["<C-v>"] = {
+                function()
+                  local ok, text = pcall(vim.fn.getreg, "+")
+                  if not ok or text == "" then
+                    text = vim.fn.getreg('"')
+                  end
+                  if text ~= "" then
+                    vim.api.nvim_paste(text, true, -1)
+                  end
+                end,
+                mode = "i",
+                desc = "粘贴系统剪贴板",
+              },
+              ["<A-v>"] = { "edit_vsplit", mode = { "n", "i" }, desc = "纵向分屏打开" },
+            },
+          },
+        },
       },
 
       -- 文本对象和状态栏
