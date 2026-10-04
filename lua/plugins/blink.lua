@@ -101,7 +101,7 @@ return {
         },
       },
       signature = {
-        enabled = false,
+        enabled = true,
         window = {
           border = "rounded",
           winblend = 0,

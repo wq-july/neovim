@@ -79,6 +79,8 @@ return {
           },
         },
         signature = {
+          -- Blink owns automatic signature popups.
+          enabled = false,
           opts = {
             border = {
               style = "rounded",

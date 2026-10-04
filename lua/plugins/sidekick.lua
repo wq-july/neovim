@@ -14,6 +14,7 @@ local function codex_cmd()
   prepend_path(vim.fn.expand("~/.cargo/bin"))
 
   local candidates = {
+    vim.fn.expand("~/.local/bin/codex-gpt"),
     vim.fn.exepath("codex"),
     vim.fn.expand("~/.npm-global/bin/codex"),
     vim.fn.expand("~/.local/bin/codex"),
@@ -102,7 +103,7 @@ local function codex_proxy_env()
   end
 
   -- 保持和 ~/.zshrc 里的 proxy_on 默认值一致；Neovide 不会自动 source ~/.zshrc，所以这里单独给 Codex 进程注入代理。
-  local proxy_addr = vim.env.CODEX_PROXY_ADDR or "127.0.0.1:10808"
+  local proxy_addr = vim.env.CODEX_PROXY_ADDR or "127.0.0.1:7898"
   local http_proxy = "http://" .. proxy_addr
   local socks_proxy = "socks5://" .. proxy_addr
   local no_proxy = vim.env.NO_PROXY or vim.env.no_proxy or "localhost,127.0.0.1,::1,100.84.29.6,172.26.120.128"
@@ -187,7 +188,8 @@ local active_ai_by_family = {
 
 local function codex_tool_config()
   return {
-    cmd = { codex_cmd() },
+    -- Keep Neovim's terminal scrollback available for reviewing Codex history.
+    cmd = { codex_cmd(), "--no-alt-screen" },
     env = codex_proxy_env(),
     is_proc = "\\<codex\\>",
     resume = { "resume" },
@@ -204,8 +206,9 @@ end
 
 local function codex_ollama_tool_config()
   return {
-    cmd = { codex_ollama_cmd() },
-    env = codex_proxy_env(),
+    cmd = { codex_ollama_cmd(), "--no-alt-screen" },
+    -- Local Ollama requests must bypass the proxy used by ChatGPT sign-in.
+    env = clear_codex_proxy_env(),
     is_proc = function(_, proc)
       return proc.cmd:find("codex-ollama", 1, true) ~= nil
         or proc.cmd:find("-p ollama", 1, true) ~= nil

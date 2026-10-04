@@ -123,3 +123,9 @@ vim.keymap.set("i", "<C-l>", "<C-o>zz", {
   desc = "Center cursor line while inserting",
   silent = true,
 })
+
+-- Neovide font size shortcuts.
+require("config.neovide_zoom")
+
+-- System clipboard paste, including the : command line and Sidekick terminal.
+require("config.paste")
