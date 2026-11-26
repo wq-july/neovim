@@ -3,9 +3,9 @@
 return {
   "petertriho/nvim-scrollbar",
   opts = {
-    handelers = {
+    providers = {
       gitsigns = true, -- 显示 Git hunk
-      search = true,   -- 与 hlslens 配合显示搜索位置
+      search = true,   -- 显示搜索匹配位置
     },
     marks = {
       Search = { color = "#CBA6F7" },
