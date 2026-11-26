@@ -129,3 +129,22 @@ require("config.neovide_zoom")
 
 -- System clipboard paste, including the : command line and Sidekick terminal.
 require("config.paste")
+
+-- 开关 LSP inlay hints（代码类型/参数提示）：全局切换。
+-- nvim 0.12 的 vim.lsp.inlay_hint 只提供 get/is_enabled/enable，
+-- 没有 set/toggle，因此按官方文档用 enable(not is_enabled()) 实现切换。
+vim.api.nvim_create_user_command("ToggleInlayHints", function()
+  local ok, enabled = pcall(function()
+    return vim.lsp.inlay_hint.is_enabled()
+  end)
+  local current = ok and enabled
+  vim.lsp.inlay_hint.enable(not current)
+  local verb = not current and "开启" or "关闭"
+  vim.notify(verb .. " LSP inlay hints（类型/参数提示）", vim.log.levels.INFO, {
+    title = "Inlay Hints",
+  })
+end, { desc = "Toggle LSP inlay hints (type/arg hints)" })
+
+vim.keymap.set("n", "<leader>ih", function()
+  vim.cmd("ToggleInlayHints")
+end, { silent = true, desc = "Toggle LSP inlay hints" })

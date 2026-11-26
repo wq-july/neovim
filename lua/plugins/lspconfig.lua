@@ -9,6 +9,7 @@ local slam_roots = {
   { name = "slam-orb-slam2", path = slam_workspace .. "/ORB_SLAM/ORB_SLAM2" },
   { name = "slam-orb-slam3", path = slam_workspace .. "/ORB_SLAM/ORB_SLAM3" },
   { name = "slam-dm-vio", path = slam_workspace .. "/DM_VIO" },
+  { name = "slam-fast-livo2-rtk", path = slam_workspace .. "/FAST-LIVO2-RTK" },
 }
 local clangd_arguments = {
   "--background-index",
@@ -56,7 +57,7 @@ end
 -- Each service has its own WSL library header copy. Reuse its active client
 -- when navigating from project code into a library.
 local function slam_root_for_header(file)
-  for service, fallback in pairs({ vins = slam_roots[1], orbslam = slam_roots[2], ["dm-vio"] = slam_roots[4] }) do
+  for service, fallback in pairs({ vins = slam_roots[1], orbslam = slam_roots[2], ["dm-vio"] = slam_roots[4], ["fast-livo2-rtk"] = slam_roots[5] }) do
     if has_prefix(file, slam_workspace .. "/.cache/headers/" .. service)
       or vim.startswith(file, slam_workspace .. "/.cache/headers/snapshots/" .. service .. "-") then
       for _, client in ipairs(vim.lsp.get_clients()) do
@@ -166,7 +167,9 @@ return {
     event = { "BufReadPre", "BufNewFile" },
     ---@class PluginLspOpts
     opts = {
-      inlay_hints = { enabled = true },
+      -- 灰色类型/名称提示 = LSP inlay hints。此处控制全局开关：
+      -- false 关闭，true 开启。改完需重启 nvim（或 :LspRestart）生效。
+      inlay_hints = { enabled = false },
       diagnostics = {
         update_in_insert = false,
         severity_sort = true,

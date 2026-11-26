@@ -1,3 +1,17 @@
+-- An empty cursor line is often unfinished code. Save it without allowing
+-- clang-format to remove it (especially immediately before a closing brace).
+local function editing_cpp_blank_line(bufnr)
+  if bufnr == nil or bufnr == 0 then
+    bufnr = vim.api.nvim_get_current_buf()
+  end
+  if bufnr ~= vim.api.nvim_get_current_buf() then
+    return false
+  end
+  local filetypes = { c = true, cpp = true, objc = true, objcpp = true, cuda = true }
+  return filetypes[vim.bo[bufnr].filetype] == true
+    and vim.api.nvim_get_current_line():match("^%s*$") ~= nil
+end
+
 return {
   {
     "stevearc/conform.nvim",
@@ -55,10 +69,24 @@ return {
     init = function()
       vim.g.autoformat = false
 
+      -- LazyVim has its own save-format path in addition to the callback below.
+      -- Keep explicit formatting (:LazyFormat / <leader>cf) available.
+      local original_format = LazyVim.format.format
+      LazyVim.format.format = function(opts)
+        opts = opts or {}
+        if not opts.force and editing_cpp_blank_line(opts.buf) then
+          return
+        end
+        return original_format(opts)
+      end
+
       vim.api.nvim_create_autocmd("BufWritePre", {
         group = vim.api.nvim_create_augroup("HermesConformFormatOnSave", { clear = true }),
         callback = function(event)
           local bufnr = event.buf
+          if editing_cpp_blank_line(bufnr) then
+            return
+          end
           if vim.g.autoformat == false or vim.b[bufnr].autoformat == false then
             return
           end
